@@ -2,6 +2,8 @@ import {readFileSync, existsSync, writeFileSync, mkdirSync} from 'fs';
 import { isNullOrUndefined } from 'util';
 import {join, dirname} from "path"
 import JSZip = require('jszip-sync');
+import * as tmp from 'tmp';
+import * as exec from 'sync-exec';
 
 export class TargetFile {
     content: string;
@@ -38,13 +40,25 @@ export class TargetFile {
     }
 
     public merge(originA: TargetFile, customizedA: TargetFile) {
-        if (isNullOrUndefined(originA)) return;
-        if (!isNullOrUndefined(customizedA)) {
-            originA.root.matchCustomize(customizedA.root);
-        }
+        if (isNullOrUndefined(originA) || isNullOrUndefined(customizedA)) return;
+        originA.root.matchCustomize(customizedA.root);
         this.root.matchVA(originA.root);
-        if (!isNullOrUndefined(customizedA)) {
-            this.root.addCustomize(customizedA.root);
+        this.root.addCustomize(customizedA.root);
+    }
+
+    public createSegmentWithPython() {
+        const tmpobj = tmp.fileSync();
+        writeFileSync(tmpobj.name, this.content);
+        let pythonScript = String.raw`C:\ZZ\projects\codegen\azure-sdk-for-python\test\test3.py`;
+        let pythonRet = exec(`python ${pythonScript} ${tmpobj.name}`);
+        try {
+            let codeStruct = JSON.parse(pythonRet.stdout);
+
+            this.root.createChildrenFromObj(codeStruct);
+            return true;
+        }
+        catch{
+            return false;
         }
     }
 }
@@ -79,6 +93,10 @@ export class BaseSegment {
 
     public get Content() {
         return this.target.content.slice(this.startAt, this.endAt);
+    }
+
+    public blurMatch(segA: BaseSegment, candidates: BaseSegment[]): number {
+        
     }
 
     public matchCustomize(customized: BaseSegment) {
@@ -176,6 +194,27 @@ export class BaseSegment {
             }
         }
         return ret;
+    }
+
+    public createChildrenFromObj(segObj) {
+        for (let idx=0; idx<segObj.children.length; idx++) {
+            const child = segObj.children[idx];
+
+            let startOfPre = this.startAt;
+            if (idx > 0) {
+                startOfPre = segObj.children[idx-1].end_at;
+            }
+            this.children.push(new BaseSegment(this.target, startOfPre, this.startAt, "pre"+child.name));
+            
+            let t = new BaseSegment(this.target, child.start_at, child.end_at, child.name);
+            this.children.push(t);
+            t.createChildrenFromObj(child);
+        }
+        let startOfTail = this.startAt;
+        if (segObj.children.length>0) {
+            startOfTail = segObj.children[segObj.children.length-1].end_at;
+        }
+        this.children.push( new BaseSegment(this.target, startOfTail, this.endAt, "tail"));
     }
 }
 
@@ -286,6 +325,12 @@ export function createTarget(file: string[]| string): TargetFile {
     let target = new TargetFile(fileContent);
     target.createSegments();
     return target;
+    if (target.createSegmentWithPython()) {
+        return target;
+    }
+    else {
+        return null;
+    }
 }
 
 export function zipFile(zipFile: string, genFile: string, content: string[]) {
