@@ -1,10 +1,10 @@
-/* ---------------------------------------------------------------------------------------------
+﻿/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *-------------------------------------------------------------------------------------------- */
 import * as path from 'path';
 import { Channel, Session } from '@azure-tools/autorest-extension-base';
-import { EnglishPluralizationService } from '@azure-tools/codegen';
+import { EnglishPluralizationService, pascalCase } from '@azure-tools/codegen';
 import {
     CodeModel,
     Operation,
@@ -16,7 +16,7 @@ import {
     Schema,
     SchemaType,
 } from '@azure-tools/codemodel';
-import { values } from '@azure-tools/linq';
+import { values, keys } from '@azure-tools/linq';
 import {
     Capitalize,
     deepCopy,
@@ -52,6 +52,7 @@ import {
     ResourcePool,
     ObjectStatus,
     GroupTestScenario,
+    LoadPreparesConfig,
 } from './templates/tests/ScenarioTool';
 import { readFile } from '@azure-tools/async-io';
 
@@ -96,6 +97,7 @@ export class CodeModelCliImpl implements CodeModelAz {
     private _useOptions: string[];
 
     private _cliCoreLib: string;
+    private _preparerConfig: any;
 
     init(): void {
         this.options = AzConfiguration.getValue(CodeGenConstants.az);
@@ -3128,6 +3130,7 @@ export class CodeModelCliImpl implements CodeModelAz {
     }
 
     public GatherInternalResource() {
+        LoadPreparesConfig(this.PreparerConfig);
         const internalResources = {}; // resource_key --> list of resource languages
         this.GetAllMethods(null, () => {
             if (!(this.CommandGroup_Key in internalResources)) {
@@ -3404,6 +3407,14 @@ export class CodeModelCliImpl implements CodeModelAz {
             return CodeGenConstants.DEFAULT_CLI_CORE_LIB;
         }
         return this._cliCoreLib;
+    }
+
+    public set PreparerConfig(options: any) {
+        this._preparerConfig = options;
+    }
+
+    public get PreparerConfig(): any {
+        return this._preparerConfig;
     }
 
     public get AzureCliFolder(): string {
