@@ -105,7 +105,7 @@ export enum CodeGenConstants {
     debug = 'debug',
     use = 'use',
     directive = 'directive',
-    parents = '_parents',
+    parents = '__parents',
     azOutputFolder = 'az-output-folder',
     generationMode = 'generation-mode',
     clearOutputFolder = 'clear-output-folder',
@@ -119,6 +119,8 @@ export enum CodeGenConstants {
     azureCliExtFolder = 'azure-cli-extension-folder',
     pythonSdkOutputFolder = 'python-sdk-output-folder',
     cliCoreLib = 'cli-core-lib',
+    inputFile = 'input-file',
+    testResources = 'test-resources',
 
     // some configuration keys under az section
     namespace = 'namespace',
@@ -136,6 +138,9 @@ export enum CodeGenConstants {
     AZ_ENTRY_CODE_MODEL_NAME = 'az-entry-code-model.yaml',
     PYLINT_MAX_CODE_LENGTH = 119,
     PYLINT_MAX_OPERATION_TEMPLATE_LENGTH = 92,
+
+    //configuration keys under test-resources section
+    test = 'test',
 }
 
 export interface AzextMetadata {

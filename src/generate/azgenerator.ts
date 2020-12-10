@@ -2,13 +2,7 @@ import { Host, startSession } from '@azure-tools/autorest-extension-base';
 import { CodeModel, codeModelSchema } from '@azure-tools/codemodel';
 import { EOL } from 'os';
 import * as path from 'path';
-import {
-    CodeGenConstants,
-    PathConstants,
-    AzConfiguration,
-    TargetMode,
-    GenerationMode,
-} from '../utils/models';
+import { CodeGenConstants, PathConstants, AzConfiguration } from '../utils/models';
 import { AzGeneratorFactory } from './generators/Factory';
 import { CodeModelCliImpl } from './CodeModelAzImpl';
 import { openInplaceGen, closeInplaceGen } from '../utils/inplace';
@@ -37,6 +31,7 @@ export async function processRequest(host: Host) {
         }
 
         openInplaceGen();
+        await model.resourcePool.loadTestResources();
         const generator = AzGeneratorFactory.createAzGenerator(model);
         await generator.generateAll();
         const files = generator.files;

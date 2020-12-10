@@ -104,7 +104,7 @@ export class CliExtSetupPy extends TemplateBase {
             model: {
                 AzextFolder: model.AzextFolder,
                 Extension_Name: model.Extension_Name,
-                azRelativeOutputFolder: azRelativeOutputFolder,
+                azRelativeOutputFolder: azRelativeOutputFolder.split(path.sep).join('/'),
                 Extension_NameClass: model.Extension_NameClass,
                 Extension_NameUnderscored: model.Extension_NameUnderscored,
                 dependencies: dependencies,

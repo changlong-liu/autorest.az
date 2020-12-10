@@ -1,10 +1,10 @@
-/* ---------------------------------------------------------------------------------------------
+﻿/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *-------------------------------------------------------------------------------------------- */
 import * as path from 'path';
 import { Channel, Session } from '@azure-tools/autorest-extension-base';
-import { EnglishPluralizationService } from '@azure-tools/codegen';
+import { EnglishPluralizationService, pascalCase } from '@azure-tools/codegen';
 import {
     CodeModel,
     Operation,
@@ -16,7 +16,7 @@ import {
     Schema,
     SchemaType,
 } from '@azure-tools/codemodel';
-import { values } from '@azure-tools/linq';
+import { values, keys } from '@azure-tools/linq';
 import {
     Capitalize,
     deepCopy,
@@ -58,8 +58,15 @@ import {
     ResourcePool,
     ObjectStatus,
     GroupTestScenario,
+    LoadPreparesConfig,
 } from './renders/tests/ScenarioTool';
 import { readFile } from '@azure-tools/async-io';
+import {
+    TestDefinitionFile,
+    TestStepArmTemplateDeployment,
+    TestStepExampleFileRestCall,
+} from 'oav/dist/lib/testScenario/testResourceTypes';
+import * as os from 'os';
 
 class ActionParam {
     public constructor(
@@ -103,6 +110,7 @@ export class CodeModelCliImpl implements CodeModelAz {
     private _useOptions: string[];
 
     private _cliCoreLib: string;
+    private _preparerConfig: any;
 
     init(): void {
         this.options = AzConfiguration.getValue(CodeGenConstants.az);
@@ -128,6 +136,8 @@ export class CodeModelCliImpl implements CodeModelAz {
         this._clientAuthenticationPolicy = this.options[
             CodeGenConstants.clientAuthenticationPolicy
         ];
+        this.PreparerConfig = this.options['preparers'];
+        LoadPreparesConfig(this.PreparerConfig);
         // this.sortOperationByAzCommand();
     }
 
@@ -209,6 +219,12 @@ export class CodeModelCliImpl implements CodeModelAz {
         return true;
     }
 
+    public get GetTestUniqueResource(): boolean {
+        const ret = this.options?.['test-unique-resource'];
+        if (ret) return true;
+        return false;
+    }
+
     public get GenMinTest(): boolean {
         const genMinTest = this.options?.['gen-min-test'];
         if (genMinTest) return true;
@@ -230,6 +246,9 @@ export class CodeModelCliImpl implements CodeModelAz {
                     v.indexOf('specification') > 0
                 ) {
                     const p = v.indexOf('specification');
+                    if (os.type().toLowerCase().indexOf('linux') >= 0) {
+                        return v.slice('file:///'.length - 1, p - 1);
+                    }
                     return v.slice('file:///'.length, p - 1);
                 }
             }
@@ -774,15 +793,13 @@ export class CodeModelCliImpl implements CodeModelAz {
     //= ================================================================================================================
 
     public GenerateTestInit(): void {
-        if (this.codeModel['test-scenario']) {
-            // if ('examples' in this.codeModel['test-scenario']) {
-            //     //new style of example configuration
-            //     this._testScenario = this.codeModel['test-scenario']['examples'];
-            // }
-            // else {
-            //     //old style of example configuration
-            //     this._testScenario = this.codeModel['test-scenario']
-            // }
+        if (this.GetResourcePool().hasTestResourceScenario) {
+            this._testScenario = GroupTestScenario(
+                this.GetResourcePool().generateTestScenario(),
+                this.Extension_NameUnderscored,
+            );
+            this._configuredScenario = true;
+        } else if (this.codeModel['test-scenario']) {
             this._testScenario = GroupTestScenario(
                 this.codeModel['test-scenario'],
                 this.Extension_NameUnderscored,
@@ -3041,6 +3058,32 @@ export class CodeModelCliImpl implements CodeModelAz {
         if (!isNullOrUndefined(this.Method_AzExamples) && this.Method_AzExamples.length > 0) {
             return this.Method_AzExamples;
         }
+        const examples: CommandExample[] = [];
+        if (this.Examples) {
+            Object.entries(this.Examples).forEach(([id, exampleObj]) => {
+                const example = this.CreateCommandExample(id, exampleObj);
+                if (!isNullOrUndefined(example)) examples.push(example);
+            });
+        }
+        this.Method_AzExamples = examples;
+        return examples;
+    }
+
+    public GetExampleById(id: string, exampleObj: any): CommandExample {
+        let ret: CommandExample = undefined;
+        if (this.Examples) {
+            Object.entries(this.Examples).forEach(([_id, _exampleObj]) => {
+                if (!isNullOrUndefined(ret)) return;
+                if (!isNullOrUndefined(id) && id.toLowerCase() !== _id.toLowerCase()) return;
+                if (!isNullOrUndefined(exampleObj)) _exampleObj = exampleObj;
+                const example = this.CreateCommandExample(_id, _exampleObj);
+                if (!isNullOrUndefined(example)) ret = example;
+            });
+        }
+        return ret;
+    }
+
+    public CreateCommandExample(id: string, exampleObj: any): CommandExample {
         function forUpdate(model: CodeModelCliImpl, exampleName: string): boolean {
             const lowercase: string = exampleName.toLowerCase();
             return (
@@ -3051,61 +3094,51 @@ export class CodeModelCliImpl implements CodeModelAz {
             );
         }
 
-        const examples: CommandExample[] = [];
-        if (this.Examples) {
-            Object.entries(this.Examples).forEach(([id, exampleObj]) => {
-                const example = new CommandExample();
-                example.Method = this.Command_MethodName;
-                example.Id = `/${this.CommandGroup_Key}/${this.Method_HttpMethod}/${id}`;
-                example.Title = exampleObj.title || id;
-                example.Path = this.Method_Path;
-                example.HttpMethod = this.Method_HttpMethod;
-                example.ResourceClassName = this.CommandGroup_Key;
-                const params = this.GetExampleParameters(exampleObj);
-                example.Parameters = this.ConvertToCliParameters(params);
-                example.MethodResponses = this.Method.responses || [];
-                example.Method_IsLongRun = !!this.Method.extensions?.[
-                    'x-ms-long-running-operation'
-                ];
-                example.ExampleObj = exampleObj;
-                if (this.Method_GetSplitOriginalOperation) {
-                    // filter example by name for generic createorupdate
-                    if (
-                        this.Command_MethodName.toLowerCase() === 'update' &&
-                        !forUpdate(this, id)
-                    ) {
-                        return;
-                    }
-                    if (this.Command_MethodName.toLowerCase() !== 'update' && forUpdate(this, id)) {
-                        return;
-                    }
-                }
-                if (this.filterExampleByPoly(exampleObj, example)) {
-                    for (let i = 0; i < example.Parameters.length; i++) {
-                        if (this.isDiscriminator(example.Parameters[i].methodParam.value)) {
-                            example.Parameters.splice(i, 1);
-                            i--;
-                        }
-                    }
-                    examples.push(example);
-                }
-                example.commandStringItems = this.GetExampleItems(example, false, undefined);
-                example.CommandString = example.commandStringItems.join(' ');
-                example.WaitCommandString = this.GetExampleWait(example).join(' ');
-            });
+        const example = new CommandExample();
+        example.Method = this.Command_MethodName;
+        example.Id = `/${this.CommandGroup_Key}/${this.Method_HttpMethod}/${id}`;
+        example.Title = exampleObj.title || id;
+        example.Path = this.Method_Path;
+        example.HttpMethod = this.Method_HttpMethod;
+        example.ResourceClassName = this.CommandGroup_Key;
+        const params = this.GetExampleParameters(exampleObj);
+        example.Parameters = this.ConvertToCliParameters(params);
+        example.MethodResponses = this.Method.responses || [];
+        example.Method_IsLongRun = !!this.Method.extensions?.['x-ms-long-running-operation'];
+        example.ExampleObj = exampleObj;
+        if (this.Method_GetSplitOriginalOperation) {
+            // filter example by name for generic createorupdate
+            if (this.Command_MethodName.toLowerCase() === 'update' && !forUpdate(this, id)) {
+                return;
+            }
+            if (this.Command_MethodName.toLowerCase() !== 'update' && forUpdate(this, id)) {
+                return;
+            }
         }
-        this.Method_AzExamples = examples;
-        return examples;
+        if (this.filterExampleByPoly(exampleObj, example)) {
+            for (let i = 0; i < example.Parameters.length; i++) {
+                if (this.isDiscriminator(example.Parameters[i].methodParam.value)) {
+                    example.Parameters.splice(i, 1);
+                    i--;
+                }
+            }
+            example.commandStringItems = this.GetExampleItems(example, false, undefined);
+            example.CommandString = example.commandStringItems.join(' ');
+            example.WaitCommandString = this.GetExampleWait(example).join(' ');
+            return example;
+        }
+        return undefined;
     }
 
     public GetExampleChecks(example: CommandExample): string[] {
         const ret: string[] = [];
         if (!this.GenChecks) return ret;
-        let resourceObjectName;
+        let resourceObjectName = undefined;
         for (const param of example.Parameters) {
             if (
                 example.ResourceClassName &&
-                this.resourcePool.isResource(param.defaultName) === example.ResourceClassName
+                this.resourcePool.isResource(param.defaultName, param.rawValue) ===
+                    example.ResourceClassName
             ) {
                 resourceObjectName = param.value;
             }
@@ -3139,21 +3172,21 @@ export class CodeModelCliImpl implements CodeModelAz {
                 continue;
             let paramValue = param.value;
             if (isTest || this.FormalizeNames) {
-                let replacedValue = this.resourcePool.addEndpointResource(
+                let replacedValue = this.resourcePool.addParamResource(
+                    param.defaultName,
                     paramValue,
                     param.isJson,
                     param.keyValue,
-                    [],
-                    [],
-                    param,
                     isTest,
                 );
                 if (replacedValue === paramValue) {
-                    replacedValue = this.resourcePool.addParamResource(
-                        param.defaultName,
+                    replacedValue = this.resourcePool.addEndpointResource(
                         paramValue,
                         param.isJson,
                         param.keyValue,
+                        [],
+                        [],
+                        param,
                         isTest,
                     );
                 }
@@ -3172,7 +3205,8 @@ export class CodeModelCliImpl implements CodeModelAz {
 
             if (
                 example.ResourceClassName &&
-                this.resourcePool.isResource(param.defaultName) === example.ResourceClassName
+                this.resourcePool.isResource(param.defaultName, param.rawValue) ===
+                    example.ResourceClassName
             ) {
                 resourceObjectName = param.value;
             }
@@ -3238,23 +3272,24 @@ export class CodeModelCliImpl implements CodeModelAz {
                 const paramKey = param.methodParam.value.language?.['cli']?.cliKey;
                 if (
                     paramKey === 'resourceGroupName' ||
-                    this.resourcePool.isResource(paramKey) === example.ResourceClassName
+                    this.resourcePool.isResource(paramKey, param.rawValue) ===
+                        example.ResourceClassName
                 ) {
                     let paramValue = param.value;
-                    let replacedValue = this.resourcePool.addEndpointResource(
+                    let replacedValue = this.resourcePool.addParamResource(
+                        param.defaultName,
                         paramValue,
                         param.isJson,
                         param.keyValue,
-                        [],
-                        [],
-                        param,
                     );
                     if (replacedValue === paramValue) {
-                        replacedValue = this.resourcePool.addParamResource(
-                            param.defaultName,
+                        replacedValue = this.resourcePool.addEndpointResource(
                             paramValue,
                             param.isJson,
                             param.keyValue,
+                            [],
+                            [],
+                            param,
                         );
                     }
                     paramValue = replacedValue;
@@ -3264,7 +3299,10 @@ export class CodeModelCliImpl implements CodeModelAz {
                     }
                     parameters.push(param.name + ' ' + slp);
                 }
-                if (this.resourcePool.isResource(paramKey) === example.ResourceClassName)
+                if (
+                    this.resourcePool.isResource(paramKey, param.rawValue) ===
+                    example.ResourceClassName
+                )
                     foundResource = true;
             }
         }
@@ -3288,21 +3326,33 @@ export class CodeModelCliImpl implements CodeModelAz {
         commandParams: any,
         examples: CommandExample[],
         minimum = false,
+        step: TestStepExampleFileRestCall = undefined,
     ): string[][] {
         const ret: string[][] = [];
-        this.GetAllExamples(id, (example) => {
-            examples.push(example);
-            ret.push(this.GetExampleItems(example, true, commandParams, minimum));
-        });
+        this.GetAllExamples(
+            id,
+            (example) => {
+                examples.push(example);
+                ret.push(this.GetExampleItems(example, true, commandParams, minimum));
+            },
+            step?.exampleTemplate,
+        );
         return ret;
     }
 
-    public FindExampleWaitById(id: string): string[][] {
+    public FindExampleWaitById(
+        id: string,
+        step: TestStepExampleFileRestCall = undefined,
+    ): string[][] {
         const ret: string[][] = [];
-        this.GetAllExamples(id, (example) => {
-            const waitCmd = this.GetExampleWait(example);
-            if (waitCmd.length > 0) ret.push(waitCmd);
-        });
+        this.GetAllExamples(
+            id,
+            (example) => {
+                const waitCmd = this.GetExampleWait(example);
+                if (waitCmd.length > 0) ret.push(waitCmd);
+            },
+            step?.exampleTemplate,
+        );
         return ret;
     }
 
@@ -3368,7 +3418,7 @@ export class CodeModelCliImpl implements CodeModelAz {
                         this.MethodParameter?.schema?.type !== 'constant'
                     ) {
                         const paramName = this.MethodParameter.language['cli'].cliKey;
-                        const onResource = this.resourcePool.isResource(paramName);
+                        const onResource = this.resourcePool.isResource(paramName, undefined);
                         for (const example of examples) {
                             for (const param of example.Parameters) {
                                 if (
@@ -3552,12 +3602,24 @@ export class CodeModelCliImpl implements CodeModelAz {
         );
     }
 
-    public GetAllExamples(id?: string, callback?: (example) => void): CommandExample[] {
+    public GetAllExamples(
+        id?: string,
+        callback?: (example) => void,
+        exampleTemplate?: any,
+    ): CommandExample[] {
         const ret: CommandExample[] = [];
         let found = false;
         this.GetAllMethods(null, () => {
             if (found) return;
-            for (const example of this.GetExamples()) {
+            let examples: CommandExample[];
+            if (!isNullOrUndefined(exampleTemplate)) {
+                const example = this.GetExampleById(id, exampleTemplate);
+                if (isNullOrUndefined(example)) return;
+                examples = [example];
+            } else {
+                examples = this.GetExamples();
+            }
+            for (const example of examples) {
                 if (id && !this.matchExample(example, id)) continue;
                 if (callback) {
                     callback(example);
@@ -3583,6 +3645,14 @@ export class CodeModelCliImpl implements CodeModelAz {
             return CodeGenConstants.DEFAULT_CLI_CORE_LIB;
         }
         return this._cliCoreLib;
+    }
+
+    public set PreparerConfig(options: any) {
+        this._preparerConfig = options;
+    }
+
+    public get PreparerConfig(): any {
+        return this._preparerConfig;
     }
 
     public get AzureCliFolder(): string {
