@@ -2924,11 +2924,11 @@ export class CodeModelCliImpl implements CodeModelAz {
     public GetExampleChecks(example: CommandExample): string[] {
         const ret: string[] = [];
         if (!this.GenChecks) return ret;
-        let resourceObjectName;
+        let resourceObjectName = undefined;
         for (const param of example.Parameters) {
             if (
                 example.ResourceClassName &&
-                this.resourcePool.isResource(param.defaultName) === example.ResourceClassName
+                this.resourcePool.isResource(param.defaultName, param.rawValue) === example.ResourceClassName
             ) {
                 resourceObjectName = param.value;
             }
@@ -2995,7 +2995,7 @@ export class CodeModelCliImpl implements CodeModelAz {
 
             if (
                 example.ResourceClassName &&
-                this.resourcePool.isResource(param.defaultName) === example.ResourceClassName
+                this.resourcePool.isResource(param.defaultName, param.rawValue) === example.ResourceClassName
             ) {
                 resourceObjectName = param.value;
             }
@@ -3061,7 +3061,7 @@ export class CodeModelCliImpl implements CodeModelAz {
                 const paramKey = param.methodParam.value.language?.['cli']?.cliKey;
                 if (
                     paramKey === 'resourceGroupName' ||
-                    this.resourcePool.isResource(paramKey) === example.ResourceClassName
+                    this.resourcePool.isResource(paramKey, param.rawValue) === example.ResourceClassName
                 ) {
                     let paramValue = param.value;
                     let replacedValue = this.resourcePool.addEndpointResource(
@@ -3087,7 +3087,7 @@ export class CodeModelCliImpl implements CodeModelAz {
                     }
                     parameters.push(param.name + ' ' + slp);
                 }
-                if (this.resourcePool.isResource(paramKey) === example.ResourceClassName)
+                if (this.resourcePool.isResource(paramKey, param.rawValue) === example.ResourceClassName)
                     foundResource = true;
             }
         }
@@ -3192,7 +3192,7 @@ export class CodeModelCliImpl implements CodeModelAz {
                         this.MethodParameter?.schema?.type !== 'constant'
                     ) {
                         const paramName = this.MethodParameter.language['cli'].cliKey;
-                        const onResource = this.resourcePool.isResource(paramName);
+                        const onResource = this.resourcePool.isResource(paramName, undefined);
                         for (const example of examples) {
                             for (const param of example.Parameters) {
                                 if (

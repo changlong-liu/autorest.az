@@ -213,6 +213,7 @@ class PreparerInfo {
     fullType: string;
     key: string;
     alias: string[];
+    forInstance: string;
     public createdObjectNames: string[];
     public constructor(
         name: string,
@@ -223,6 +224,7 @@ class PreparerInfo {
         alias: string[],
         fullType: string=undefined,
         needGen: boolean=false,
+        forInstance: string=undefined,
     ) {
         this.name = name;
         this.className = className;
@@ -233,6 +235,7 @@ class PreparerInfo {
         this.alias = alias;
         this.needGen = needGen;
         this.fullType = fullType;
+        this.forInstance = forInstance;
     }
 }
 let preparerInfos = {
@@ -260,7 +263,7 @@ export function LoadPreparesConfig(preparers: any[]) {
         if (isNullOrUndefined(classKey)) {
             classKey = resourceClass;
         }
-        //resourceClassKeys[resourceClass] = classKey;
+        // resourceClassKeys[resourceClass] = classKey;
         // resourceLanguages[resourceClass] = [resourceClass];
         let alias = [resourceClass];
         if (config.alias) {
@@ -275,7 +278,7 @@ export function LoadPreparesConfig(preparers: any[]) {
             depends.splice(nameIndex, 1);
         }
         // resourceClassDepends[resourceClass] = depends;
-        preparerInfos[resourceClass] = new PreparerInfo(GenPreparerName(resourceClass), resourceClass, depends.map(GenPreparerDependParamName), depends, classKey, alias, fullType, true);
+        preparerInfos[resourceClass] = new PreparerInfo(GenPreparerName(resourceClass), resourceClass, depends.map(GenPreparerDependParamName), depends, classKey, alias, fullType, true, config.forInstance);
     }
 }
 
@@ -853,14 +856,27 @@ export class ResourcePool {
         return this.map[className].objects[objectName];
     }
 
-    public isResource(language: string): string | null {
+    public isResource(language: string, instanceName: string): string | null {
         if (language.startsWith("--")) language = language.substr(2);
+        let classResource = null;
+        let instanceResource = null;
         for (let resource in preparerInfos) {
-            for (let resourceLanguage of preparerInfos[resource]?.alias) {
-                if (resourceLanguage.toLowerCase() == language.toLowerCase()) return resource;
+            for (let resourceLanguage of preparerInfos[resource]?.alias || []) {
+                if (resourceLanguage.toLowerCase() == language.toLowerCase()) {
+                    if (isNullOrUndefined(preparerInfos[resource].forInstance)) {
+                        classResource = resource;
+                    }
+                    else if(preparerInfos[resource].forInstance.toLowerCase() == instanceName.toLowerCase()) {
+                        instanceResource = resource;
+                    }
+                } 
             }
         }
-        return null;
+        if (isNullOrUndefined(instanceName)) {
+            return classResource;
+        }
+
+        return instanceResource || classResource;
     }
 
     private formatable(str: string, placeholders: string[]) {
@@ -1089,7 +1105,7 @@ export class ResourcePool {
                     fullType.push(nodes[i].toLowerCase());
                 }
             }
-            const resource = this.isResource(nodes[i]);
+            const resource = this.isResource(nodes[i], nodes[i+1]);
             if (resource) {
                 if (resource === SUBNET) {
                     // since the subnet can't be created with rand name, just use the dfault one.
@@ -1126,7 +1142,7 @@ export class ResourcePool {
         if (paramName.startsWith('--')) {
             paramName = paramName.substr(2);
         }
-        const resource = this.isResource(paramName);
+        const resource = this.isResource(paramName, paramValue);
         if (!resource) {
             return this.getPlaceholder(paramValue, isTest);
         }
