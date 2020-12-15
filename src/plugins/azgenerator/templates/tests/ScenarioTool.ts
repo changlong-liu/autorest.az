@@ -863,10 +863,10 @@ export class ResourcePool {
         for (let resource in preparerInfos) {
             for (let resourceLanguage of preparerInfos[resource]?.alias || []) {
                 if (resourceLanguage.toLowerCase() == language.toLowerCase()) {
-                    if (isNullOrUndefined(preparerInfos[resource].forInstance)) {
+                    if (isNullOrUndefined(preparerInfos[resource]?.forInstance)) {
                         classResource = resource;
                     }
-                    else if(preparerInfos[resource].forInstance.toLowerCase() == instanceName.toLowerCase()) {
+                    else if(typeof instanceName === 'string' && preparerInfos[resource]?.forInstance?.toLowerCase() == instanceName?.toLowerCase()) {
                         instanceResource = resource;
                     }
                 } 
