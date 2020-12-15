@@ -25,7 +25,7 @@ import { GenerateAzureCliValidators } from './templates/generated/CliValidators'
 import { CliTestInit } from './templates/tests/CliTestInit';
 import { CliTestPrepare } from './templates/tests/CliTestPrepare';
 import { CliTestScenario } from './templates/tests/CliTestScenario';
-import { CliTestStep, NeedPreparer } from './templates/tests/CliTestStep';
+import { CliTestStep, NeedPreparers } from './templates/tests/CliTestStep';
 import { GenerateMetaFile } from './templates/CliMeta';
 
 export class AzCoreIncrementalGenerator extends AzGeneratorBase {
@@ -156,10 +156,8 @@ export class AzCoreIncrementalGenerator extends AzGeneratorBase {
                 true,
             );
         }
-        if (NeedPreparer()) {
-            await this.generateIncrementalSingleAndAddtoOutput(
-                new CliTestPrepare(this.model, this.isDebugMode),
-            );
+        for (let resourceName of NeedPreparers()) {
+            await this.generateIncrementalSingleAndAddtoOutput(new CliTestPrepare(this.model, this.isDebugMode, resourceName));
         }
         GenerateMetaFile(this.model);
     }

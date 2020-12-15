@@ -1,26 +1,27 @@
-/* ---------------------------------------------------------------------------------------------
+﻿/* ---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *-------------------------------------------------------------------------------------------- */
 import * as path from 'path';
-import { CodeModelAz, CommandExample } from '../../CodeModelAz';
-import { PreparerEntity, getResourceKey } from './ScenarioTool';
-import { ToMultiLine, deepCopy, isNullOrUndefined } from '../../../../utils/helper';
-import { HeaderGenerator } from '../../Header';
-import { TemplateBase } from '../TemplateBase';
-import { PathConstants } from '../../../../utils/models';
+import { CodeModelAz, CommandExample } from "../../CodeModelAz"
+import { PreparerEntity, getResourceKey } from "./ScenarioTool"
+import { ToMultiLine, deepCopy, ToSnakeCase } from '../../../../utils/helper';
+import { HeaderGenerator } from "../../Header";
+import { TemplateBase } from "../TemplateBase";
+import { PathConstants } from "../../../models";
+import { isNullOrUndefined } from 'util';
 
-let usePreparers: boolean, shortToLongName, funcNames, allSteps, stepBuff: any;
+let usePreparers: Set<string>, shortToLongName, funcNames, allSteps, stepBuff: object;
 
 function initVars() {
-    usePreparers = false;
+    usePreparers = new Set<string>();
     shortToLongName = {};
     funcNames = {};
     allSteps = [];
     stepBuff = {};
 }
 
-export function NeedPreparer(): boolean {
+export function NeedPreparers(): Set<string> {
     return usePreparers;
 }
 
@@ -261,13 +262,14 @@ export class CliTestStep extends TemplateBase {
             line += ')';
             ToMultiLine(line, decorators);
             if (decorated.indexOf(entity.info.name) < 0) {
-                if (entity.info.name === 'ResourceGroupPreparer') {
-                    header.addFromImport('azure.cli.testsdk', [entity.info.name]);
-                } else if (entity.info.name === 'StorageAccountPreparer') {
-                    header.addFromImport('azure.cli.testsdk', [entity.info.name]);
-                } else {
-                    header.addFromImport('.preparers', [entity.info.name]);
-                    usePreparers = true;
+                if (entity.info.name == 'ResourceGroupPreparer') {
+                    header.addFromImport("azure.cli.testsdk", [entity.info.name]);
+                }
+                else if (entity.info.name == 'StorageAccountPreparer') {
+                    header.addFromImport("azure.cli.testsdk", [entity.info.name]);
+                } else if (entity.info.needGen) {
+                    header.addFromImport("."+entity.info.FileName.slice(0, -3), [entity.info.name]);
+                    usePreparers.add(entity.info.className);
                 }
                 decorated.push(entity.info.name);
             }

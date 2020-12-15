@@ -174,7 +174,7 @@ export function TopoSortResource() {
     //let reverse_depends = { };
     let depends = {};
     for (let r in preparerInfos) {
-        depends[r] = preparerInfos[r].dependResources;
+        depends[r] = deepCopy(preparerInfos[r].dependResources);
     }
     while (ret.length < Object.keys(preparerInfos).length) {
         let decreasing = false;
@@ -204,7 +204,18 @@ export function TopoSortResource() {
     return ret;
 }
 
-class PreparerInfo {
+export class PreparerConfig {
+    resource: string;
+    fullType: string;
+    abbr: string;
+    alias: string[];
+    forInstance: string;
+    create: string[];
+    delete: string[];
+    inits: {[key: string]: any;};
+}
+
+export class PreparerInfo {
     name: string;
     className: string;
     dependParameters: string[];
@@ -213,7 +224,7 @@ class PreparerInfo {
     fullType: string;
     key: string;
     alias: string[];
-    forInstance: string;
+    config: PreparerConfig;
     public createdObjectNames: string[];
     public constructor(
         name: string,
@@ -224,7 +235,7 @@ class PreparerInfo {
         alias: string[],
         fullType: string=undefined,
         needGen: boolean=false,
-        forInstance: string=undefined,
+        config: PreparerConfig=undefined,
     ) {
         this.name = name;
         this.className = className;
@@ -235,10 +246,15 @@ class PreparerInfo {
         this.alias = alias;
         this.needGen = needGen;
         this.fullType = fullType;
-        this.forInstance = forInstance;
+        this.config = config;
+    }
+
+    public get FileName(): string {
+        return ToSnakeCase(this.className+".py");
     }
 }
-let preparerInfos = {
+
+export let preparerInfos: { [key: string]: PreparerInfo; } = {
     [RESOUREGROUP]: new PreparerInfo('ResourceGroupPreparer', RESOUREGROUP, [], [], 'rg', ['resource-group', 'resourceGroupName', 'resourceGroups']),
     [STORAGEACCOUNT]: new PreparerInfo('StorageAccountPreparer', STORAGEACCOUNT, ['resource_group_parameter_name'], [RESOUREGROUP], 'sa', ['storage-account', 'storageAccountName', 'storageAccounts']),
     // [VIRTUALNETWORK]: new PreparerInfo('VirtualNetworkPreparer', VIRTUALNETWORK, ['resource_group_key'], [RESOUREGROUP]),
@@ -254,7 +270,7 @@ export function GenPreparerDependParamName(className: string): string {
     return ToSnakeCase(className) + "_key";
 }
 
-export function LoadPreparesConfig(preparers: any[]) {
+export function LoadPreparesConfig(preparers: PreparerConfig[]) {
     if (isNullOrUndefined(preparers))   return;
     for (let config of preparers) {
         let resourceClass: string = config.resource.toLowerCase();
@@ -269,16 +285,32 @@ export function LoadPreparesConfig(preparers: any[]) {
         if (config.alias) {
             alias.push(...config.alias);
         }
-        let depends: string[] = config.create.match(/\{.*?\}/g);
+        if (typeof config.create === 'string') {
+            config.create = [config.create];
+        }
+        if (typeof config.delete === 'string') {
+            config.delete = [config.delete];
+        }
+        if (isNullOrUndefined(config.inits)) {
+            config.inits = {};
+        }
+        if (Object.getOwnPropertyNames(config.inits).indexOf('name_prefix')<0) {
+            config.inits['name_prefix'] = "clitest." + classKey;
+        }
+        if (Object.getOwnPropertyNames(config.inits).indexOf('random_name_length')<0) {
+            config.inits['random_name_length'] = 24;
+        }
+        let depends: string[] = config.create.concat(config.delete).join("\n").match(/\{.*?\}/g);
         depends = depends.map((x: string)=>{
             return x.substr(1, x.length-2).toLowerCase();
         });
+        depends = Array.from(new Set(depends));
         let nameIndex = depends.indexOf('name');
         if (nameIndex !== -1) {
             depends.splice(nameIndex, 1);
         }
         // resourceClassDepends[resourceClass] = depends;
-        preparerInfos[resourceClass] = new PreparerInfo(GenPreparerName(resourceClass), resourceClass, depends.map(GenPreparerDependParamName), depends, classKey, alias, fullType, true, config.forInstance);
+        preparerInfos[resourceClass] = new PreparerInfo(GenPreparerName(resourceClass), resourceClass, depends.map(GenPreparerDependParamName), depends, classKey, alias, fullType, true, config);
     }
 }
 
@@ -863,10 +895,10 @@ export class ResourcePool {
         for (let resource in preparerInfos) {
             for (let resourceLanguage of preparerInfos[resource]?.alias || []) {
                 if (resourceLanguage.toLowerCase() == language.toLowerCase()) {
-                    if (isNullOrUndefined(preparerInfos[resource]?.forInstance)) {
+                    if (isNullOrUndefined(preparerInfos[resource]?.config?.forInstance)) {
                         classResource = resource;
                     }
-                    else if(typeof instanceName === 'string' && preparerInfos[resource]?.forInstance?.toLowerCase() == instanceName?.toLowerCase()) {
+                    else if(typeof instanceName === 'string' && preparerInfos[resource]?.config?.forInstance?.toLowerCase() == instanceName?.toLowerCase()) {
                         instanceResource = resource;
                     }
                 } 
@@ -1210,7 +1242,10 @@ export class ResourcePool {
             }
             else {
                 preparerInfos[className].key = className; // TODO: brief key for internal resources
-                preparerInfos[className].alias.push(...resources[className]);
+                for (let a of resources[className]) {
+                    if (preparerInfos[className].alias.indexOf(a)<0)
+                        preparerInfos[className].alias.push(a);
+                }
             }
         }
     }

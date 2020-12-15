@@ -40,10 +40,10 @@ az:
       abbr:  vn
       alias:
         - virtualnetwork
-      create: |-
-        az network vnet create --resource-group {resourceGroups} --name {name}
-      delete:  |-
-        az network vnet delete --resource-group {resourceGroups} --name {name} -f
+      create:
+        - az network vnet create --resource-group {resourceGroups} --name {name}
+      delete:
+        - az network vnet delete --resource-group {resourceGroups} --name {name} -f
 
     - resource: subnets
       forInstance: mySubnet
