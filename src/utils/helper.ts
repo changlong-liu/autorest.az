@@ -346,13 +346,12 @@ export function ToMultiLine(
                     ret[ret.length - 1] = ret[ret.length - 1].substr(0, lastComma + 1);
                     ret.push(newLine);
                     lastComma = -1;
-                } else if (i < sentence.length - 2) {
-                    for (let j = ret[ret.length - 1].length - 1; j > indent; j--) {
-                        const currentChar = ret[ret.length - 1][j];
-                        if (!currentChar.match(/[a-z0-9_]/i) && sentence[i + 1] !== ',') {
-                            const newLine =
-                                ' '.repeat(ret[ret.length - 1].search(/\S|$/)) +
-                                ret[ret.length - 1].substr(j + 1).trimLeft();
+                }
+                else if (i < sentence.length - 2) {
+                    for (let j=ret[ret.length - 1].length-1; j>indent; j--) {
+                        let currentChar = ret[ret.length - 1][j];
+                        if (!currentChar.match(/[a-z0-9_\.]/i) && sentence[i+1] != ",") {
+                            let newLine = ' '.repeat(ret[ret.length - 1].search(/\S|$/)) + ret[ret.length - 1].substr(j + 1).trimLeft();
                             ret[ret.length - 1] = ret[ret.length - 1].substr(0, j + 1);
                             if (indents.length === 0) {
                                 ret[ret.length - 1] += '\\'; // fix E502
