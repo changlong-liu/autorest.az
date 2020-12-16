@@ -105,22 +105,26 @@ export class CliTestPrepare extends TemplateBase {
         // output.push("            tags['job'] = os.environ['ENV_JOB_NAME']");
         // output.push("        tags = ' '.join(['{}={}'.format(key, value)");
         // output.push("                         for key, value in tags.items()])");
-        for (let template of this.preparerInfo.config.create) {
-            let variables: string[] = [];
-            let depends: string[] = template.match(/\{.*?\}/g);
-            depends = depends.map((x: string)=>{
-                return x.substr(1, x.length-2).toLowerCase();
-            });
-            for (let depend of depends) {
-                if (depend == "name") {
-                    variables.push(depend);
+        function genLiveRun(templates: string[]) {
+            for (let template of templates) {
+                let variables: string[] = [];
+                let depends: string[] = template.match(/\{.*?\}/g);
+                depends = depends.map((x: string)=>{
+                    return x.substr(1, x.length-2).toLowerCase();
+                });
+                for (let depend of depends) {
+                    if (depend == "name") {
+                        variables.push(depend);
+                    }
+                    else {
+                        variables.push("self." + GenPreparerDependParamName(depend));
+                    }
                 }
-                else {
-                    variables.push("self." + GenPreparerDependParamName(depend));
-                }
+                ToMultiLine(`        template = '${template}'`, output);
+                ToMultiLine(`        self.live_only_execute(self.cli_ctx, template.format(${variables.join(", ")}))`, output);
             }
-            ToMultiLine(`        self.live_only_execute(self.cli_ctx, '${template}'.format(${variables.join(", ")}))`, output);
         }
+        genLiveRun(this.preparerInfo.config.create);
         
         // output.push("        template = 'az network vnet create --resource-group {} --name {} --subnet-name default --tag ' + tags");
         // output.push("        self.live_only_execute(self.cli_ctx, template.format(");
@@ -130,22 +134,7 @@ export class CliTestPrepare extends TemplateBase {
         output.push("        return {self.key: name}");
         output.push("");
         output.push("    def remove_resource(self, name, **_):");
-        for (let template of this.preparerInfo.config.delete) {
-            let variables: string[] = [];
-            let depends: string[] = template.match(/\{.*?\}/g);
-            depends = depends.map((x: string)=>{
-                return x.substr(1, x.length-2).toLowerCase();
-            });
-            for (let depend of depends) {
-                if (depend == "name") {
-                    variables.push(depend);
-                }
-                else {
-                    variables.push("self." + GenPreparerDependParamName(depend));
-                }
-            }
-            ToMultiLine(`        self.live_only_execute(self.cli_ctx, '${template}'.format(${variables.join(", ")}))`, output);
-        }
+        genLiveRun(this.preparerInfo.config.delete);
         // output.push("        if not self.dev_setting_name:");
         // output.push("            self.live_only_execute(");
         // output.push("                self.cli_ctx,");
