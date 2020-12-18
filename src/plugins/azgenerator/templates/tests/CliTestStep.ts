@@ -268,7 +268,7 @@ export class CliTestStep extends TemplateBase {
                 else if (entity.info.name == 'StorageAccountPreparer') {
                     header.addFromImport("azure.cli.testsdk", [entity.info.name]);
                 } else if (entity.info.needGen) {
-                    header.addFromImport("."+entity.info.FileName.slice(0, -3), [entity.info.name]);
+                    header.addFromImport(".preparers", [entity.info.name]);
                     usePreparers.add(entity.info.className);
                 }
                 decorated.push(entity.info.name);

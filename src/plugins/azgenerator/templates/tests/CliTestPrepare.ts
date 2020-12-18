@@ -7,23 +7,22 @@ import { GenPreparerDependParamName, GenPreparerName, preparerInfos, PreparerInf
 import { ToJsonString, ToMultiLine } from '../../../../utils/helper';
 
 export class CliTestPrepare extends TemplateBase {
-    preparerInfo: PreparerInfo;
-    constructor(model: CodeModelAz, isDebugMode: boolean, resourceName: string) {
+    resourceNames: string[];
+    constructor(model: CodeModelAz, isDebugMode: boolean, resourceNames: string[]) {
         super(model, isDebugMode);
-        let a = preparerInfos;
-        this.preparerInfo = preparerInfos[resourceName];
+        this.resourceNames = resourceNames;
         if (this.model.IsCliCore) {
             this.relativePath = path.join(
                 PathConstants.testFolder,
                 PathConstants.latestFolder,
-                this.preparerInfo.FileName,
+                PathConstants.preparersFile,
             );
         } else {
             this.relativePath = path.join(
                 model.AzextFolder,
                 PathConstants.testFolder,
                 PathConstants.latestFolder,
-                this.preparerInfo.FileName,
+                PathConstants.preparersFile,
             );
         }
     }
@@ -36,35 +35,21 @@ export class CliTestPrepare extends TemplateBase {
         return this.fullGeneration();
     }
 
-    private GenerateAzureCliTestPrepare(model: CodeModelAz): string[] {
-        let header: HeaderGenerator = new HeaderGenerator();
-        var output: string[] = header.getLines();
-        output.push("");
-        // output.push("import os");
-        // output.push("from datetime import datetime");
-        output.push("from azure_devtools.scenario_tests import SingleValueReplacer");
-        output.push("from azure.cli.testsdk.preparers import NoTrafficRecordingPreparer");
-        output.push("from azure.cli.testsdk.exceptions import CliTestError");
-        output.push("from azure.cli.testsdk.reverse_dependency import get_dummy_cli");
-        // output.push("");
-        // output.push("");
-        // output.push("KEY_RESOURCE_GROUP = 'rg'");
-        // output.push("KEY_VIRTUAL_NETWORK = 'vnet'");
-        // output.push("KEY_VNET_SUBNET = 'subnet'");
-        // output.push("KEY_VNET_NIC = 'nic'");
+    private AddPreparer(model: CodeModelAz, resourceName: string, output: string[]) {
+        const preparerInfo = preparerInfos[resourceName];
         output.push("");
         output.push("");
-        output.push(`class ${GenPreparerName(this.preparerInfo.className)}(NoTrafficRecordingPreparer, SingleValueReplacer):`);
+        output.push(`class ${GenPreparerName(preparerInfo.className)}(NoTrafficRecordingPreparer, SingleValueReplacer):`);
 
         let buf: string[] = [];
         buf.push("    def __init__(self,");
         
-        for (let i=0; i<this.preparerInfo.dependResources.length; i++) {
-            buf.push(`                 ${preparerInfos[this.preparerInfo.className].dependParameters[i]}=${ToJsonString(preparerInfos[preparerInfos[this.preparerInfo.className].dependResources[i]].key)},`);
+        for (let i=0; i<preparerInfo.dependResources.length; i++) {
+            buf.push(`                 ${preparerInfos[preparerInfo.className].dependParameters[i]}=${ToJsonString(preparerInfos[preparerInfos[preparerInfo.className].dependResources[i]].key)},`);
         }
-        buf.push(`                 key=${ToJsonString(this.preparerInfo.key)},`);
-        for (let k in this.preparerInfo.config.inits) {
-            buf.push(`                 ${k}=${ToJsonString(this.preparerInfo.config.inits[k])},`);
+        buf.push(`                 key=${ToJsonString(preparerInfo.key)},`);
+        for (let k in preparerInfo.config.inits) {
+            buf.push(`                 ${k}=${ToJsonString(preparerInfo.config.inits[k])},`);
         }
         buf.splice(-1,1, buf.last.slice(0, -1)+"):");
         output.push(...buf);
@@ -77,12 +62,12 @@ export class CliTestPrepare extends TemplateBase {
         // output.push("        if ' ' in name_prefix:");
         // output.push("            raise CliTestError(");
         // output.push("                'Error: Space character in name prefix \\'%s\\'' % name_prefix)");
-        output.push(`        super(${GenPreparerName(this.preparerInfo.className)}, self).__init__(`);
+        output.push(`        super(${GenPreparerName(preparerInfo.className)}, self).__init__(`);
         output.push("            name_prefix, random_name_length)");
         output.push("        self.cli_ctx = get_dummy_cli()");
         // output.push("        self.parameter_name = parameter_name");
         output.push("        self.key = key");
-        for (let param of this.preparerInfo.dependParameters.concat(Object.getOwnPropertyNames(this.preparerInfo.config.inits))) {
+        for (let param of preparerInfo.dependParameters.concat(Object.getOwnPropertyNames(preparerInfo.config.inits))) {
             output.push(`        self.${param} = ${param}`);
         }
         // output.push("        self.resource_group_name = resource_group_name");
@@ -124,7 +109,7 @@ export class CliTestPrepare extends TemplateBase {
                 ToMultiLine(`        self.live_only_execute(self.cli_ctx, template.format(${variables.join(", ")}))`, output);
             }
         }
-        genLiveRun(this.preparerInfo.config.create);
+        genLiveRun(preparerInfo.config.create);
         
         // output.push("        template = 'az network vnet create --resource-group {} --name {} --subnet-name default --tag ' + tags");
         // output.push("        self.live_only_execute(self.cli_ctx, template.format(");
@@ -134,7 +119,7 @@ export class CliTestPrepare extends TemplateBase {
         output.push("        return {self.key: name}");
         output.push("");
         output.push("    def remove_resource(self, name, **_):");
-        genLiveRun(this.preparerInfo.config.delete);
+        genLiveRun(preparerInfo.config.delete);
         // output.push("        if not self.dev_setting_name:");
         // output.push("            self.live_only_execute(");
         // output.push("                self.cli_ctx,");
@@ -246,6 +231,27 @@ export class CliTestPrepare extends TemplateBase {
         // output.push("                self.cli_ctx,");
         // output.push("                'az network nic delete --name {} --resource-group {}'.format(name, self.resource_group[1]))");
         // output.push("");
+    }
+    private GenerateAzureCliTestPrepare(model: CodeModelAz): string[] {
+        let header: HeaderGenerator = new HeaderGenerator();
+        var output: string[] = header.getLines();
+        output.push("");
+        // output.push("import os");
+        // output.push("from datetime import datetime");
+        output.push("from azure_devtools.scenario_tests import SingleValueReplacer");
+        output.push("from azure.cli.testsdk.preparers import NoTrafficRecordingPreparer");
+        output.push("from azure.cli.testsdk.exceptions import CliTestError");
+        output.push("from azure.cli.testsdk.reverse_dependency import get_dummy_cli");
+        // output.push("");
+        // output.push("");
+        // output.push("KEY_RESOURCE_GROUP = 'rg'");
+        // output.push("KEY_VIRTUAL_NETWORK = 'vnet'");
+        // output.push("KEY_VNET_SUBNET = 'subnet'");
+        // output.push("KEY_VNET_NIC = 'nic'");
+        output.push("");
+        for (const resourceName of this.resourceNames) {
+            this.AddPreparer(model, resourceName, output);
+        }
         return output;
     }
 }

@@ -35,7 +35,7 @@ cli:
 
 az:
   preparers:
-    - resource: virtualnetworks
+    - resource: virtualNetworks
       fullType: microsoft.network/virtualnetworks
       abbr:  vn
       alias:
@@ -48,9 +48,9 @@ az:
     - resource: subnets
       forInstance: mySubnet
       create: |-
-        az network vnet subnet create -n {name} --vnet-name {virtualnetworks} -g {resourceGroups} --nat-gateway MyNatGateway --address-prefixes "10.0.0.0/21"
+        az network vnet subnet create -n {name} --vnet-name {virtualNetworks} -g {resourceGroups} --nat-gateway MyNatGateway --address-prefixes "10.0.0.0/21"
       delete:  |-
-        az network vnet subnet delete --name {name} --resource-group MyResourceGroup --vnet-name {virtualnetworks} -f
+        az network vnet subnet delete --name {name} --resource-group MyResourceGroup --vnet-name {virtualNetworks} -f
 
     - resource: serviceendpointpolicies
       create: |-

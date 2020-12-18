@@ -115,8 +115,9 @@ export class AzExtensionFullGenerator extends AzGeneratorBase {
                 true,
             );
         }
-        for (let resourceName of NeedPreparers()) {
-            await this.generateFullSingleAndAddtoOutput(new CliTestPrepare(this.model, this.isDebugMode, resourceName));
+        let needPreparers = NeedPreparers();
+        if (needPreparers.size>0) {
+            await this.generateFullSingleAndAddtoOutput(new CliTestPrepare(this.model, this.isDebugMode, [...needPreparers]));
         }
         GenerateMetaFile(this.model);
     }

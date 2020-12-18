@@ -122,6 +122,8 @@ export class CodeModelCliImpl implements CodeModelAz {
         this._clientAuthenticationPolicy = this.options[
             CodeGenConstants.clientAuthenticationPolicy
         ];
+        this.PreparerConfig = this.options['preparers'];
+        LoadPreparesConfig(this.PreparerConfig);
         // this.sortOperationByAzCommand();
     }
 
@@ -3130,8 +3132,7 @@ export class CodeModelCliImpl implements CodeModelAz {
     }
 
     public GatherInternalResource() {
-        LoadPreparesConfig(this.PreparerConfig);
-        const internalResources = {}; // resource_key --> list of resource languages
+        let internalResources = {};  // resource_key --> list of resource languages
         this.GetAllMethods(null, () => {
             if (!(this.CommandGroup_Key in internalResources)) {
                 internalResources[this.CommandGroup_Key] = [this.CommandGroup_Key];

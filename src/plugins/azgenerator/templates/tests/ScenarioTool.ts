@@ -138,11 +138,11 @@ export function GroupTestScenario(testScenario: any, extensionName: string) {
 }
 
 const SUBSCRIPTIONS = "subscriptions";
-const RESOUREGROUP = "resourcegroups";
-const VIRTUALNETWORK = "virtual-network";
-const STORAGEACCOUNT = "storage-account";
-const SUBNET = "subnet";
-const NETWORKINTERFACE = "network-interface";
+const RESOUREGROUP = "resourceGroups";
+const VIRTUALNETWORK = "virtualNetworks";
+const STORAGEACCOUNT = "storageAccounts";
+const SUBNET = "subnets";
+const NETWORKINTERFACE = "networkInterfaces";
 
 // let resourceClassDepends = {
 //     [RESOUREGROUP]: [],
@@ -221,7 +221,6 @@ export class PreparerInfo {
     dependParameters: string[];
     dependResources: string[];
     needGen: boolean;
-    fullType: string;
     key: string;
     alias: string[];
     config: PreparerConfig;
@@ -233,7 +232,6 @@ export class PreparerInfo {
         dependResources: string[],
         key: string,
         alias: string[],
-        fullType: string=undefined,
         needGen: boolean=false,
         config: PreparerConfig=undefined,
     ) {
@@ -245,12 +243,7 @@ export class PreparerInfo {
         this.key = key;
         this.alias = alias;
         this.needGen = needGen;
-        this.fullType = fullType;
         this.config = config;
-    }
-
-    public get FileName(): string {
-        return ToSnakeCase(this.className+".py");
     }
 }
 
@@ -263,18 +256,19 @@ export let preparerInfos: { [key: string]: PreparerInfo; } = {
 }
 
 export function GenPreparerName(className: string): string {
-    return Capitalize(ToCamelCase(className)) + "Preparer";
+    let eps = new EnglishPluralizationService();
+    return Capitalize(eps.singularize(ToCamelCase(ToSnakeCase(className)))) + "Preparer";
 }
 
 export function GenPreparerDependParamName(className: string): string {
-    return ToSnakeCase(className) + "_key";
+    let eps = new EnglishPluralizationService();
+    return ToSnakeCase(eps.singularize(className)) + "_key";
 }
 
 export function LoadPreparesConfig(preparers: PreparerConfig[]) {
     if (isNullOrUndefined(preparers))   return;
     for (let config of preparers) {
-        let resourceClass: string = config.resource.toLowerCase();
-        let fullType: string = config.fullType;
+        let resourceClass: string = config.resource;
         let classKey = config.abbr;
         if (isNullOrUndefined(classKey)) {
             classKey = resourceClass;
@@ -302,7 +296,7 @@ export function LoadPreparesConfig(preparers: PreparerConfig[]) {
         }
         let depends: string[] = config.create.concat(config.delete).join("\n").match(/\{.*?\}/g);
         depends = depends.map((x: string)=>{
-            return x.substr(1, x.length-2).toLowerCase();
+            return x.substr(1, x.length-2);
         });
         depends = Array.from(new Set(depends));
         let nameIndex = depends.indexOf('name');
@@ -310,7 +304,7 @@ export function LoadPreparesConfig(preparers: PreparerConfig[]) {
             depends.splice(nameIndex, 1);
         }
         // resourceClassDepends[resourceClass] = depends;
-        preparerInfos[resourceClass] = new PreparerInfo(GenPreparerName(resourceClass), resourceClass, depends.map(GenPreparerDependParamName), depends, classKey, alias, fullType, true, config);
+        preparerInfos[resourceClass] = new PreparerInfo(GenPreparerName(resourceClass), resourceClass, depends.map(GenPreparerDependParamName), depends, classKey, alias, true, config);
     }
 }
 
@@ -888,13 +882,26 @@ export class ResourcePool {
         return this.map[className].objects[objectName];
     }
 
-    public isResource(language: string, instanceName: string): string | null {
+    public matchFullType(preparerConfig: PreparerConfig, instanceName: string, fullType: string[]) {
+        const configedFullType = preparerConfig?.fullType?.split("/");
+        if (isNullOrUndefined(configedFullType) ||isNullOrUndefined(fullType))    return true;
+        if (configedFullType.length!=fullType.length)   return false;
+        for (let i=0;i<configedFullType.length; i++) {
+            const resourceA = configedFullType[i];
+            const resourceB = fullType[i];
+            if (resourceA.toLowerCase()!=resourceB.toLowerCase() && this.isResource(resourceA, instanceName)!=this.isResource(resourceB, instanceName)) return false;
+        }
+        return true;
+    }
+
+    public isResource(language: string, instanceName: string, fullType: string[]=undefined): string | null {
         if (language.startsWith("--")) language = language.substr(2);
         let classResource = null;
         let instanceResource = null;
         for (let resource in preparerInfos) {
             for (let resourceLanguage of preparerInfos[resource]?.alias || []) {
-                if (resourceLanguage.toLowerCase() == language.toLowerCase()) {
+                if (resourceLanguage.toLowerCase() == language.toLowerCase() &&
+                    this.matchFullType(preparerInfos[resource]?.config, instanceName, fullType)) {
                     if (isNullOrUndefined(preparerInfos[resource]?.config?.forInstance)) {
                         classResource = resource;
                     }
@@ -1133,11 +1140,11 @@ export class ResourcePool {
                 fullType.push(nodes[i+1].toLowerCase());
             }
             else {
-                if (fullType.length>1) {
+                if (fullType.length>=1) {
                     fullType.push(nodes[i].toLowerCase());
                 }
             }
-            const resource = this.isResource(nodes[i], nodes[i+1]);
+            const resource = this.isResource(nodes[i], nodes[i+1], fullType);
             if (resource) {
                 if (resource === SUBNET) {
                     // since the subnet can't be created with rand name, just use the dfault one.

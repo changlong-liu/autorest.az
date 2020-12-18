@@ -156,8 +156,9 @@ export class AzCoreIncrementalGenerator extends AzGeneratorBase {
                 true,
             );
         }
-        for (let resourceName of NeedPreparers()) {
-            await this.generateIncrementalSingleAndAddtoOutput(new CliTestPrepare(this.model, this.isDebugMode, resourceName));
+        let needPreparers = NeedPreparers();
+        if (needPreparers.size>0) {
+            await this.generateIncrementalSingleAndAddtoOutput(new CliTestPrepare(this.model, this.isDebugMode, [...needPreparers]));
         }
         GenerateMetaFile(this.model);
     }
