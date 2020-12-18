@@ -38,3 +38,33 @@ class VirtualNetworkPreparer(NoTrafficRecordingPreparer, SingleValueReplacer):
     def remove_resource(self, name, **_):
         template = 'az network vnet delete --resource-group {resourceGroups} --name {name} -f'
         self.live_only_execute(self.cli_ctx, template.format(self.resourcegroup_key, name))
+
+
+class SubnetPreparer(NoTrafficRecordingPreparer, SingleValueReplacer):
+    def __init__(self,
+                 virtual_network_key="vn",
+                 resource_group_key="rg",
+                 key="subnets",
+                 name_prefix="clitest.subnets",
+                 random_name_length=24):
+        super(SubnetPreparer, self).__init__(
+            name_prefix, random_name_length)
+        self.cli_ctx = get_dummy_cli()
+        self.key = key
+        self.virtual_network_key = virtual_network_key
+        self.resource_group_key = resource_group_key
+        self.name_prefix = name_prefix
+        self.random_name_length = random_name_length
+
+    def create_resource(self, name, **_):
+        template = 'az network vnet subnet create -n {name} --vnet-name {virtualNetworks} -g {resourceGroups} '
+        '--nat-gateway MyNatGateway --address-prefixes "10.0.0.0/21"'
+        self.live_only_execute(self.cli_ctx, template.format(name, self.virtualnetwork_key, self.resourcegroup_key))
+
+        self.test_class_instance.kwargs[self.key] = name
+        return {self.key: name}
+
+    def remove_resource(self, name, **_):
+        template = 'az network vnet subnet delete --name {name} --resource-group MyResourceGroup --vnet-name '
+        '{virtualNetworks} -f'
+        self.live_only_execute(self.cli_ctx, template.format(name, self.virtualnetwork_key))

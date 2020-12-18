@@ -604,7 +604,7 @@ export class ResourcePool {
         entitys: PreparerEntity[],
         preparings: string[][],
     ) {
-        if (className === SUBNET) return; // use default subnet, no need to prepare it.
+        // if (className === SUBNET) return; // use default subnet, no need to prepare it.
 
         function inPreparings(): boolean {
             for (const [pCName, pOName] of preparings) {
@@ -1146,7 +1146,7 @@ export class ResourcePool {
             }
             const resource = this.isResource(nodes[i], nodes[i+1], fullType);
             if (resource) {
-                if (resource === SUBNET) {
+                if (false && resource == SUBNET) {
                     // since the subnet can't be created with rand name, just use the dfault one.
                     nodes[i + 1] = 'default';
                 } else {
@@ -1185,14 +1185,15 @@ export class ResourcePool {
         if (!resource) {
             return this.getPlaceholder(paramValue, isTest);
         }
-        if (resource === SUBNET) {
-            // since the subnet can't be created with rand name, just use the dfault one.
-            return 'default';
-        }
-        const resourceObject = this.addMapResource(resource, paramValue);
+        // if (resource == SUBNET) {
+        //     // since the subnet can't be created with rand name, just use the dfault one.
+        //     return 'default';
+        // }
+        let resourceObject = this.addMapResource(resource, paramValue);
         if (resourceObject) {
             return resourceObject.placeholder(isTest);
-        } else {
+        }
+        else {
             return this.getPlaceholder(paramValue, isTest);
         }
     }

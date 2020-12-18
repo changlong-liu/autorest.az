@@ -46,7 +46,7 @@ az:
         - az network vnet delete --resource-group {resourceGroups} --name {name} -f
 
     - resource: subnets
-      forInstance: mySubnet
+      # forInstance: mySubnet
       create: |-
         az network vnet subnet create -n {name} --vnet-name {virtualNetworks} -g {resourceGroups} --nat-gateway MyNatGateway --address-prefixes "10.0.0.0/21"
       delete:  |-
