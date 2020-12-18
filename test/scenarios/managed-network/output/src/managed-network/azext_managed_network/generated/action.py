@@ -35,7 +35,7 @@ class AddSubscriptions(argparse._AppendAction):
                 d['id'] = v[0]
             else:
                 raise CLIError('Unsupported Key {} is provided for parameter subscriptions. All possible keys are: id'
-                .format(k))
+                               .format(k))
         return d
 
 
@@ -88,7 +88,7 @@ class AddSubnets(argparse._AppendAction):
                     d['id'] = v[0]
                 else:
                     raise CLIError('Unsupported Key {} is provided for parameter subnets. All possible keys are: id'
-                    .format(k))
+                                   .format(k))
             ret.append(d)
         return ret
 

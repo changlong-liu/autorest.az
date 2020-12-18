@@ -120,7 +120,7 @@ class AddSku(argparse.Action):
                 d['name'] = v[0]
             else:
                 raise CLIError('Unsupported Key {} is provided for parameter sku. All possible keys are: tier, name'
-                .format(k))
+                               .format(k))
         return d
 
 

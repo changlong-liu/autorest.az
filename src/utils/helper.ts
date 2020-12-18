@@ -319,25 +319,26 @@ export function ToMultiLine(
                         }
                     }
                 }
-            } else {
-                if (lastComma >= 0) {
-                    // find indent by parathesis before the lastComma
-                    let closePara = 0;
-                    for (let i = lastComma; i > indent; i--) {
-                        if (inStrTags[i]) continue;
-                        const currentChar = ret[ret.length - 1][i];
-                        if (currentChar === ')' || currentChar === ']') closePara++;
-                        if (currentChar === '(' || currentChar === '[') {
-                            if (closePara === 0) {
-                                indents.push(indent);
-                                indent = i + 1;
-                                break;
-                            } else {
-                                closePara--;
-                            }
+            }
+            else {
+                //find indent by parathesis before the lastComma
+                let closePara = 0;
+                for (let seek = lastComma>=0?lastComma:ret[ret.length - 1].length-1; seek > indent; seek--) {
+                    if (inStrTags[seek]) continue;
+                    let currentChar = ret[ret.length - 1][seek];
+                    if (currentChar == ')' || currentChar == ']') closePara++;
+                    if (currentChar == '(' || currentChar == '[') {
+                        if (closePara == 0) {
+                            indents.push(indent);
+                            indent = seek + 1;
+                            break;
+                        }
+                        else {
+                            closePara--;
                         }
                     }
-
+                }
+                if (lastComma >= 0) {
                     let prefixSpaces = ret[ret.length - 1].search(/\S|$/);
                     if (indent > 0) prefixSpaces = indent;
                     const newLine =
@@ -351,7 +352,9 @@ export function ToMultiLine(
                     for (let j=ret[ret.length - 1].length-1; j>indent; j--) {
                         let currentChar = ret[ret.length - 1][j];
                         if (!currentChar.match(/[a-z0-9_\.]/i) && sentence[i+1] != ",") {
-                            let newLine = ' '.repeat(ret[ret.length - 1].search(/\S|$/)) + ret[ret.length - 1].substr(j + 1).trimLeft();
+                            let prefixSpaces = ret[ret.length - 1].search(/\S|$/);
+                            if (indent > 0) prefixSpaces = indent;
+                            let newLine = ' '.repeat(prefixSpaces) + ret[ret.length - 1].substr(j + 1).trimLeft();
                             ret[ret.length - 1] = ret[ret.length - 1].substr(0, j + 1);
                             if (indents.length === 0) {
                                 ret[ret.length - 1] += '\\'; // fix E502
