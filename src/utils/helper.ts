@@ -176,6 +176,7 @@ export function ToMultiLine(
     output: string[] = undefined,
     maxLength = 119,
     strMode = false,
+    useContinuation: boolean = true,
 ): string[] {
     let lastComma = -1;
     let inStr = false;
@@ -257,14 +258,15 @@ export function ToMultiLine(
                 }
 
                 if (strMode) {
-                    if (lastNormal !== ret[ret.length - 1].length - 1) {
-                        const newLine = ret[ret.length - 1].substr(lastNormal + 1);
-                        ret[ret.length - 1] = ret[ret.length - 1].substr(0, lastNormal + 1) + '\\';
+                    if (lastNormal != ret[ret.length - 1].length - 1) {
+                        let newLine = ret[ret.length - 1].substr(lastNormal + 1);
+                        ret[ret.length - 1] = ret[ret.length - 1].substr(0, lastNormal + 1);
+                        if (useContinuation)    ret[ret.length - 1] += "\\";
                         ret.push(newLine);
                         lastComma = -1;
                     } else {
                         if (i < sentence.length - 1) {
-                            ret[ret.length - 1] += '\\';
+                            if (useContinuation) ret[ret.length - 1] += "\\";
                             ret.push('');
                             lastComma = -1;
                         }
@@ -286,17 +288,18 @@ export function ToMultiLine(
                         lastComma = -1;
                     }
 
-                    if (ret[ret.length - 2].length >= 2) {
-                        const lenLast = ret[ret.length - 2].length;
-                        if (isStrTags[lenLast - 2]) {
-                            if (ret[ret.length - 2].slice(0, -2).match(/^ *$/i)) {
-                                ret.splice(ret.length - 2, 1);
-                            } else {
-                                ret[ret.length - 2] = ret[ret.length - 2].slice(0, -2); // remove "" at the tail
-                                if (ret[ret.length - 2].slice(-1)[0] !== '=') {
-                                    while (ret[ret.length - 2].slice(-1)[0] === ' ') {
-                                        // remove all spaces before ""
-                                        ret[ret.length - 2] = ret[ret.length - 2].slice(0, -1);
+                    // handle special case: space, "" or = in tail
+                    if (ret[ret.length-2].length>=2) {
+                        let lenLast = ret[ret.length - 2].length;
+                        if (isStrTags[lenLast-2]) {
+                            if (ret[ret.length-2].slice(0, -2).match(/^ *$/i))
+                                ret.splice(ret.length-2, 1);
+                            else
+                            {
+                                ret[ret.length-2] = ret[ret.length-2].slice(0, -2); // remove "" at the tail
+                                if (ret[ret.length-2].slice(-1)[0]!="=") {
+                                    while (ret[ret.length-2].slice(-1)[0] == " ") {     // remove all spaces before ""
+                                        ret[ret.length-2] = ret[ret.length-2].slice(0, -1); 
                                     }
                                 } else {
                                     // there is = in the end of line --> create new line from the last comma
@@ -318,27 +321,45 @@ export function ToMultiLine(
                             }
                         }
                     }
+
+                    // add '\' in end of breaking point if there is no parathesis
+                    if (indents.length==0 && useContinuation) {
+                        ret[ret.length - 2] += "\\";
+                    }
                 }
             }
             else {
                 //find indent by parathesis before the lastComma
-                let closePara = 0;
-                for (let seek = lastComma>=0?lastComma:ret[ret.length - 1].length-1; seek > indent; seek--) {
-                    if (inStrTags[seek]) continue;
-                    let currentChar = ret[ret.length - 1][seek];
-                    if (currentChar == ')' || currentChar == ']') closePara++;
-                    if (currentChar == '(' || currentChar == '[') {
-                        if (closePara == 0) {
-                            indents.push(indent);
-                            indent = seek + 1;
-                            break;
-                        }
-                        else {
-                            closePara--;
+                while (lastComma>=0 && indents.length>0 && indent>lastComma) {
+                    if (indents.length>1 || lastComma<indents[0]) {
+                        // if it's not the first parathesis indent, or lastComma is in front of the first parathesis indent, then pop();
+                        indent = indents.pop();
+                    }
+                    else {
+                        // if it's the first parathesis indent, and lastComma is behind of it, then keep it.
+                        break;
+                    }
+                }
+                if (indents.length ==0 && lastComma>=0) {
+                    // if indents.length ==0 && lastComma>=0, then try to seek for the parathesis before the lastComma
+                    let closePara = 0;
+                    for (let seek = lastComma>=0?lastComma:ret[ret.length - 1].length-1; seek > indent; seek--) {
+                        if (inStrTags[seek]) continue;
+                        let currentChar = ret[ret.length - 1][seek];
+                        if (currentChar == ')' || currentChar == ']') closePara++;
+                        if (currentChar == '(' || currentChar == '[') {
+                            if (closePara == 0) {
+                                indents.push(indent);
+                                indent = seek + 1;
+                                break;
+                            }
+                            else {
+                                closePara--;
+                            }
                         }
                     }
                 }
-                if (lastComma >= 0) {
+                if (lastComma >= 0 && lastComma>indent) {
                     let prefixSpaces = ret[ret.length - 1].search(/\S|$/);
                     if (indent > 0) prefixSpaces = indent;
                     const newLine =
@@ -364,6 +385,10 @@ export function ToMultiLine(
                             break;
                         }
                     }
+                }
+
+                if (indents.length==0 && useContinuation) {
+                    ret[ret.length - 2] += "\\";
                 }
             }
 

@@ -146,7 +146,7 @@ export class CliTestStep extends TemplateBase {
                                         (idx === 0 ? "test.cmd('" : "         '");
                                     const postfix: string =
                                         idx < exampleCmd.length - 1 ? " '" : "',";
-                                    ToMultiLine(prefix + exampleCmd[idx] + postfix, steps);
+                                    ToMultiLine(prefix + exampleCmd[idx] + postfix, steps, 119, false, false);
                                 }
                                 if (isNullOrUndefined(waitCmds) || waitCmds.length === 0) {
                                     steps.push('    ' + disabled + '         checks=checks)');

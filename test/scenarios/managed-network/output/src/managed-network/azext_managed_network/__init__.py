@@ -9,7 +9,6 @@
 # --------------------------------------------------------------------------
 
 from azure.cli.core import AzCommandsLoader
-from azure.cli.core.profiles import ResourceType
 from azext_managed_network.generated._help import helps  # pylint: disable=unused-import
 try:
     from azext_managed_network.manual._help import helps  # pylint: disable=reimported
@@ -26,8 +25,7 @@ class ManagedNetworkManagementClientCommandsLoader(AzCommandsLoader):
             operations_tmpl='azext_managed_network.custom#{}',
             client_factory=cf_managed_network_cl)
         parent = super(ManagedNetworkManagementClientCommandsLoader, self)
-        parent.__init__(cli_ctx=cli_ctx, custom_command_type=managed_network_custom,
-                        resource_type=ResourceType.DATA_NETWORK)
+        parent.__init__(cli_ctx=cli_ctx, custom_command_type=managed_network_custom)
 
     def load_command_table(self, args):
         from azext_managed_network.generated.commands import load_command_table

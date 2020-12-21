@@ -99,13 +99,17 @@ export class CliTestPrepare extends TemplateBase {
                 });
                 for (let depend of depends) {
                     if (depend == "name") {
-                        variables.push(depend);
+                        variables.push(`name`);
                     }
                     else {
-                        variables.push("self." + GenPreparerDependParamName(depend));
+                        for (let i=0; i<preparerInfos[preparerInfo.class_name].depend_parameters.length; i++) {
+                            if (model.GetResourcePool().isResource(preparerInfos[preparerInfo.class_name].depend_resources[i], null)==model.GetResourcePool().isResource(depend, null)) {
+                                variables.push(`self.test_class_instance.kwargs.get(self.${preparerInfos[preparerInfo.class_name].depend_parameters[i]})`);
+                            }
+                        }  
                     }
                 }
-                ToMultiLine(`        template = '${template}'`, output);
+                ToMultiLine(`        template = '${template.replace(/\{.*?\}/g, '{}')}'`, output);
                 ToMultiLine(`        self.live_only_execute(self.cli_ctx, template.format(${variables.join(", ")}))`, output);
             }
         }
