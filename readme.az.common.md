@@ -43,14 +43,14 @@ az:
       create:
         - az network vnet create --resource-group {resourceGroups} --name {name}
       delete:
-        - az network vnet delete --resource-group {resourceGroups} --name {name} -f
+        - az network vnet delete --resource-group {resourceGroups} --name {name}
 
     - resource: subnets
       # forInstance: mySubnet
       create: |-
-        az network vnet subnet create -n {name} --vnet-name {virtualNetworks} -g {resourceGroups} --nat-gateway MyNatGateway --address-prefixes "10.0.0.0/21"
+        az network vnet subnet create -n {name} --vnet-name {virtualNetworks} -g {resourceGroups} --address-prefixes "10.0.0.0/21"
       delete:  |-
-        az network vnet subnet delete --name {name} --resource-group {resourceGroups} --vnet-name {virtualNetworks} -f
+        az network vnet subnet delete --name {name} --resource-group {resourceGroups} --vnet-name {virtualNetworks}
 
     - resource: serviceendpointpolicies
       create: |-
