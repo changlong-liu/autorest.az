@@ -35,7 +35,7 @@ cli:
 
 az:
   preparers:
-    - resource: virtualNetworks
+    virtualNetworks:
       fullType: microsoft.network/virtualnetworks
       abbr:  vn
       alias:
@@ -45,14 +45,14 @@ az:
       delete:
         - az network vnet delete --resource-group {resourceGroups} --name {name}
 
-    - resource: subnets
+    subnets:
       # forInstance: mySubnet
       create: |-
         az network vnet subnet create -n {name} --vnet-name {virtualNetworks} -g {resourceGroups} --address-prefixes "10.0.0.0/21"
       delete:  |-
         az network vnet subnet delete --name {name} --resource-group {resourceGroups} --vnet-name {virtualNetworks}
 
-    - resource: serviceendpointpolicies
+    serviceendpointpolicies:
       create: |-
         az network service-endpoint policy create --name {name} --resource-group {resourceGroups}
       delete:  |-

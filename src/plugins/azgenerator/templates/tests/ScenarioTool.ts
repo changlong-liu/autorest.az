@@ -250,7 +250,7 @@ export class PreparerInfo {
 export let preparerInfos: { [key: string]: PreparerInfo; } = {
     [RESOUREGROUP]: new PreparerInfo('ResourceGroupPreparer', RESOUREGROUP, [], [], 'rg', ['resource-group', 'resourceGroupName', 'resourceGroups']),
     [STORAGEACCOUNT]: new PreparerInfo('StorageAccountPreparer', STORAGEACCOUNT, ['resource_group_parameter_name'], [RESOUREGROUP], 'sa', ['storage-account', 'storageAccountName', 'storageAccounts']),
-    // [VIRTUALNETWORK]: new PreparerInfo('VirtualNetworkPreparer', VIRTUALNETWORK, ['resource_group_key'], [RESOUREGROUP]),
+    // [VIRTUALNETWORK]: new PreparerInfo('VirtualNetworkPreparer', VIRTUALNETWORK, ['resource_group_parameter_name'], [RESOUREGROUP], 'vnet', ['virtualNetworks', 'virtual-network', 'virtualNetworkName',]),
     // [SUBNET]: new PreparerInfo('VnetSubnetPreparer', SUBNET, ['resource_group_key', 'vnet_key'], [RESOUREGROUP, VIRTUALNETWORK]),
     // [NETWORKINTERFACE]: new PreparerInfo('VnetNicPreparer', NETWORKINTERFACE, ['resource_group_key', 'vnet_key'], [RESOUREGROUP, VIRTUALNETWORK]),
 }
@@ -265,10 +265,11 @@ export function GenPreparerDependParamName(className: string): string {
     return ToSnakeCase(eps.singularize(className)) + "_key";
 }
 
-export function LoadPreparesConfig(preparers: PreparerConfig[]) {
+export function LoadPreparesConfig(preparers: {[key: string]: PreparerConfig;}) {
     if (isNullOrUndefined(preparers))   return;
-    for (let config of preparers) {
-        let resourceClass: string = config.resource;
+    for (let resourceClass in preparers) {
+        // let resourceClass: string = config.resource;
+        let config = preparers[resourceClass];
         let classKey = config.abbr;
         if (isNullOrUndefined(classKey)) {
             classKey = resourceClass;

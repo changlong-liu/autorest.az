@@ -262,11 +262,14 @@ export class CliTestStep extends TemplateBase {
             line += ')';
             ToMultiLine(line, decorators);
             if (decorated.indexOf(entity.info.name) < 0) {
-                if (entity.info.name == 'ResourceGroupPreparer') {
+                if (!entity.info.needGen) {
                     header.addFromImport("azure.cli.testsdk", [entity.info.name]);
-                }
-                else if (entity.info.name == 'StorageAccountPreparer') {
-                    header.addFromImport("azure.cli.testsdk", [entity.info.name]);
+                // }
+                // else if (entity.info.name == 'ResourceGroupPreparer') {
+                //     header.addFromImport("azure.cli.testsdk", [entity.info.name]);
+                // }
+                // else if (entity.info.name == 'StorageAccountPreparer') {
+                //     header.addFromImport("azure.cli.testsdk", [entity.info.name]);
                 } else if (entity.info.needGen) {
                     header.addFromImport(".preparers", [entity.info.name]);
                     usePreparers.add(entity.info.className);
