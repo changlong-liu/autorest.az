@@ -201,6 +201,12 @@ export class CodeModelCliImpl implements CodeModelAz {
         return true;
     }
 
+    public get GetTestUniqueResource(): boolean {
+        let ret = this.options?.['test-unique-resource'];
+        if (ret) return true;
+        return false;
+    }
+
     public get GenMinTest(): boolean {
         const genMinTest = this.options?.['gen-min-test'];
         if (genMinTest) return true;

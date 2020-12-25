@@ -260,4 +260,5 @@ export interface CodeModelAz {
     GenMinTest: boolean;
     GetMetaData(): {[key: string]: any};
     PreparerConfig: any;
+    GetTestUniqueResource: boolean;
 }

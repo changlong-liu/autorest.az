@@ -235,10 +235,11 @@ export class CliTestStep extends TemplateBase {
         const parameterNames = [];
         for (const entity of model.GetPreparerEntities() as PreparerEntity[]) {
             if (!entity.info.name) {
+                const created = model.GetTestUniqueResource?entity.info.createdObjectNames.length>0: entity.info.createdObjectNames.indexOf(entity.objectName) >= 0;
                 internalObjects.push([
                     entity.info.className,
                     getResourceKey(entity.info.className, entity.objectName),
-                    entity.info.createdObjectNames.indexOf(entity.objectName) >= 0,
+                    created,
                     entity.objectName,
                 ]);
                 continue;
