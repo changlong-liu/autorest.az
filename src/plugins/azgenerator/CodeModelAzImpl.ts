@@ -2964,21 +2964,21 @@ export class CodeModelCliImpl implements CodeModelAz {
                 continue;
             let paramValue = param.value;
             if (isTest || this.FormalizeNames) {
-                let replacedValue = this.resourcePool.addEndpointResource(
+                let replacedValue = this.resourcePool.addParamResource(
+                    param.defaultName,
                     paramValue,
                     param.isJson,
                     param.keyValue,
-                    [],
-                    [],
-                    param,
                     isTest,
                 );
                 if (replacedValue === paramValue) {
-                    replacedValue = this.resourcePool.addParamResource(
-                        param.defaultName,
+                    replacedValue = this.resourcePool.addEndpointResource(
                         paramValue,
                         param.isJson,
                         param.keyValue,
+                        [],
+                        [],
+                        param,
                         isTest,
                     );
                 }
@@ -3066,20 +3066,20 @@ export class CodeModelCliImpl implements CodeModelAz {
                     this.resourcePool.isResource(paramKey, param.rawValue) === example.ResourceClassName
                 ) {
                     let paramValue = param.value;
-                    let replacedValue = this.resourcePool.addEndpointResource(
+                    let replacedValue = this.resourcePool.addParamResource(
+                        param.defaultName,
                         paramValue,
                         param.isJson,
                         param.keyValue,
-                        [],
-                        [],
-                        param,
                     );
                     if (replacedValue === paramValue) {
-                        replacedValue = this.resourcePool.addParamResource(
-                            param.defaultName,
+                        replacedValue = this.resourcePool.addEndpointResource(
                             paramValue,
                             param.isJson,
                             param.keyValue,
+                            [],
+                            [],
+                            param,
                         );
                     }
                     paramValue = replacedValue;

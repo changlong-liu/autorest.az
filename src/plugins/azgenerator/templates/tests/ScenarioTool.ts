@@ -1184,7 +1184,7 @@ export class ResourcePool {
         }
         const resource = this.isResource(paramName, paramValue);
         if (!resource) {
-            return this.getPlaceholder(paramValue, isTest);
+            return this.getPlaceholder(paramValue, isTest, null, resource);
         }
         // if (resource == SUBNET) {
         //     // since the subnet can't be created with rand name, just use the dfault one.
@@ -1199,18 +1199,13 @@ export class ResourcePool {
         }
     }
 
-    public getPlaceholder(
-        objectName: string,
-        isTest: boolean,
-        placeholders: string[] = null,
-    ): string {
+
+    public getPlaceholder(objectName: string, isTest: boolean, placeholders: string[] = null, targetClassName=undefined): string {
         // find in MapResource
-        for (const className in this.map) {
-            if (
-                !isNullOrUndefined(this.map[className].objects) &&
-                Object.prototype.hasOwnProperty.call(this.map[className].objects, objectName)
-            ) {
-                const ret = this.map[className].objects[objectName].placeholder(isTest);
+        for (let className in this.map) {
+            if (!isNullOrUndefined(targetClassName) && className != targetClassName)   continue;
+            if ( !isNullOrUndefined(this.map[className].objects) && this.map[className].objects.hasOwnProperty(objectName)) {
+                let ret = this.map[className].objects[objectName].placeholder(isTest);
                 if (!isNullOrUndefined(placeholders)) {
                     if (placeholders.indexOf(ret) < 0) {
                         placeholders.push(ret);
@@ -1221,7 +1216,7 @@ export class ResourcePool {
         }
 
         // find in TreeResource
-        const resourceObject = this.findTreeResource(null, objectName, this.root);
+        let resourceObject = this.findTreeResource(targetClassName, objectName, this.root);
         if (resourceObject) {
             const ret = resourceObject.placeholder(isTest);
             if (!isNullOrUndefined(placeholders)) {
