@@ -547,8 +547,24 @@ function singlizeLast(word: string) {
 let keyCache = {}  //class_name+objectname->key
 let formalCache = {}
 let keySeq = {}    // class_name ->seq
+let uniqueNames = {};
+
+function addUniqueName(className: string, objectName: string): string {
+    let ret = objectName;
+    if (azOptions['test-unique-resource']) {
+        if (uniqueNames.hasOwnProperty(className)) {
+            ret = uniqueNames[className];
+        }
+        else {
+            uniqueNames[className] = ret;
+        }
+    }
+    return ret;
+}
+
 export function getResourceKey(className: string, objectName: string, formalName = false): string {
-    let longKey = (preparerInfos[className]?.key || className) + '_' + objectName;
+    let originObjectName = addUniqueName(className, objectName);
+    let longKey = (preparerInfos[className]?.key || className) + '_' + originObjectName;
     if (formalName && longKey in formalCache) {
         return formalCache[longKey];
     }
@@ -721,6 +737,7 @@ export class ResourcePool {
         objectName: string,
         parentObject: ResourceObject,
     ): ResourceObject {
+        objectName = addUniqueName(className, objectName);
         const resources: Map<string, ResourceClass> = parentObject
             ? parentObject.subResources
             : this.root;
@@ -867,7 +884,8 @@ export class ResourcePool {
     }
 
     public addMapResource(className: string, objectName: string): ResourceObject {
-        const resourceObject = this.findTreeResource(className, objectName, this.root);
+        objectName = addUniqueName(className, objectName);
+        let resourceObject = this.findTreeResource(className, objectName, this.root);
         if (resourceObject) {
             return resourceObject;
         }
