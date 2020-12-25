@@ -551,7 +551,7 @@ let uniqueNames = {};
 
 function addUniqueName(className: string, objectName: string): string {
     let ret = objectName;
-    if (azOptions['test-unique-resource']) {
+    if (azOptions?.['test-unique-resource']) {
         if (uniqueNames.hasOwnProperty(className)) {
             ret = uniqueNames[className];
         }

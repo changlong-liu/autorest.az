@@ -132,8 +132,8 @@ export class CliTestStep extends TemplateBase {
                                 );
                             } else {
                                 stepBuff[cmdString] = functionName;
-                                if (exampleCmd[0].indexOf(' delete') > -1) {
-                                    exampleCmd[0] += ' -y';
+                                if (exampleCmd[0].indexOf(' delete') > -1 && examples[exampleIdx].HttpMethod.toLowerCase()=="delete") {
+                                    exampleCmd[0] += " -y";
                                 }
 
                                 steps.push('    if checks is None:');
