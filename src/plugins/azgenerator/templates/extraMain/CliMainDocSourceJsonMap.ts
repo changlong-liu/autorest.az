@@ -26,6 +26,7 @@ export class CliMainDocSourceJsonMap extends TemplateBase {
     }
 
     private GenerateDocSourceJsonMap(model: CodeModelAz, docSourceJsonMapPath): string[] {
+        if (!fs.existsSync(docSourceJsonMapPath)) return [];
         const outputFile = fs.readFileSync(docSourceJsonMapPath).toString().split(EOL);
         const docSourceJson = JSON.parse(fs.readFileSync(docSourceJsonMapPath).toString());
         if (isNullOrUndefined(docSourceJson[model.Extension_NameUnderscored])) {

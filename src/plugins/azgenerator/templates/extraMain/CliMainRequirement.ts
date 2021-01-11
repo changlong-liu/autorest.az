@@ -23,6 +23,7 @@ export class CliMainRequirement extends TemplateBase {
     }
 
     private async GenerateRequirementTxt(model: CodeModelAz, requirementPath) {
+        if (!fs.existsSync(requirementPath)) return [];
         const outputFile = fs.readFileSync(requirementPath).toString().split(EOL);
         const latestVersion = await getLatestPyPiVersion(model.GetPythonPackageName());
         let found = false;

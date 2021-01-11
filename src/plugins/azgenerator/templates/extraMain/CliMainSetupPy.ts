@@ -26,6 +26,7 @@ export class CliMainSetupPy extends TemplateBase {
     }
 
     private async GenerateAzureCliMainSetUp(model: CodeModelAz, requirementPath) {
+        if (!fs.existsSync(requirementPath)) return [];
         const outputFile = fs.readFileSync(requirementPath).toString().split(EOL);
         const packageName = model.GetPythonPackageName();
         const latestVersion = await getLatestPyPiVersion(packageName);

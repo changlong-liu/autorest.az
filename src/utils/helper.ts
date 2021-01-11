@@ -726,3 +726,68 @@ export function getGitStatus(folder: string) {
 export function isNullOrUndefined(obj: any) {
     return obj === null || obj === undefined;
 }
+
+export async function loadAzOptions(session) {
+    let azSettings = await session.getValue('az');
+    const swaggerName= getRPFolder(await session.getValue('__parents'));
+    if (isNullOrUndefined(azSettings)) azSettings = {};
+    if (!azSettings.hasOwnProperty('extensions'))   azSettings.extensions = mapToCliName(swaggerName);
+    if (!azSettings.hasOwnProperty('package-name'))   azSettings['package-name'] = 'azure-mgmt-' + mapToPythonPackage(swaggerName);
+    if (!azSettings.hasOwnProperty('namespace'))   azSettings.namespace = 'azure.mgmt.' + mapToPythonPackage(swaggerName);
+    return azSettings;
+}
+
+export async function loadAzOutputFolder(host, session) {
+    let ret = await host.GetValue('az-output-folder');
+    if (isNullOrUndefined(ret)) {
+        return path.join(await session.getValue('azure-cli-folder'), 'src', 'azure-cli', 'azure', 'cli', 'command_modules', mapToCliName(getRPFolder(await session.getValue('__parents'))));
+    }
+    return ret;
+}
+
+export async function loadPythonSdkOutputFolder(host, session) {
+    let ret = await host.GetValue('python-sdk-output-folder');
+    if (isNullOrUndefined(ret)) {
+        const cliName =  mapToCliName(getRPFolder(await session.getValue('__parents')));
+        return path.join(await loadAzOutputFolder(host, session), 'az_' + cliName, 'vendored_sdks', cliName);
+    }
+    return ret;
+}
+
+function mapToPythonPackage(swaggerName: string): string {
+    let map = {
+
+    }
+    if (map.hasOwnProperty(swaggerName)) {
+        return map[swaggerName]
+    }
+    return swaggerName;
+}
+
+function mapToCliName(swaggerName: string): string {
+    let map = {
+        'compute': 'vm',
+    }
+    if (map.hasOwnProperty(swaggerName)) {
+        return map[swaggerName]
+    }
+    return swaggerName;
+}
+
+export function getRPFolder(parentsOptions: { [key: string]: any }) {
+    for (const k in parentsOptions) {
+        const v: string = parentsOptions[k];
+        if (
+            k.endsWith('.json') &&
+            typeof v === 'string' &&
+            v.startsWith('file:///') &&
+            v.indexOf('specification') > 0
+        ) {
+            
+            const p = v.indexOf('specification/');
+            const l = 'specification/'.length;
+            return v.slice(p+ l, v.indexOf('/', p+l+1));
+        }
+    }
+    return undefined;
+}
