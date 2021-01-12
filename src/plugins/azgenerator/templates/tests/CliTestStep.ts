@@ -8,7 +8,7 @@ import { PreparerEntity, getResourceKey } from "./ScenarioTool"
 import { ToMultiLine, deepCopy, ToSnakeCase } from '../../../../utils/helper';
 import { HeaderGenerator } from "../../Header";
 import { TemplateBase } from "../TemplateBase";
-import { PathConstants } from "../../../models";
+import { PathConstants } from "../../../../utils/models"
 import { isNullOrUndefined } from 'util';
 
 let usePreparers: Set<string>, shortToLongName, funcNames, allSteps, stepBuff: object;
@@ -146,7 +146,7 @@ export class CliTestStep extends TemplateBase {
                                         (idx === 0 ? "test.cmd('" : "         '");
                                     const postfix: string =
                                         idx < exampleCmd.length - 1 ? " '" : "',";
-                                    ToMultiLine(prefix + exampleCmd[idx] + postfix, steps, 119, false, false);
+                                    ToMultiLine(prefix + exampleCmd[idx] + postfix, steps);
                                 }
                                 if (isNullOrUndefined(waitCmds) || waitCmds.length === 0) {
                                     steps.push('    ' + disabled + '         checks=checks)');
