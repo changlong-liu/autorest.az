@@ -754,7 +754,7 @@ export async function loadPythonSdkOutputFolder(host, session) {
     return ret;
 }
 
-function mapToPythonPackage(swaggerName: string): string {
+export function mapToPythonPackage(swaggerName: string): string {
     let map = {
 
     }
@@ -764,7 +764,7 @@ function mapToPythonPackage(swaggerName: string): string {
     return swaggerName;
 }
 
-function mapToCliName(swaggerName: string): string {
+export function mapToCliName(swaggerName: string): string {
     let map = {
         'compute': 'vm',
     }

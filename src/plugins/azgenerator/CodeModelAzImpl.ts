@@ -30,7 +30,6 @@ import {
     isEqualStringArray,
     ToSentence,
     isNullOrUndefined,
-    loadAzOptions,
 } from '../../utils/helper';
 import {
     CodeGenConstants,

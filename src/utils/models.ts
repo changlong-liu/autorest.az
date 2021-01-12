@@ -3,7 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *-------------------------------------------------------------------------------------------- */
 
-import { isNullOrUndefined } from './helper';
+import { Dictionary } from '@azure-tools/linq';
+import { pathToFileURL } from 'url';
+import { isNullOrUndefined, getRPFolder, mapToCliName, mapToPythonPackage} from './helper';
+import * as path from 'path';
 
 export enum GenerationMode {
     Manual,
@@ -97,7 +100,7 @@ export enum CodeGenConstants {
     debug = 'debug',
     use = 'use',
     directive = 'directive',
-    parents = '_parents',
+    parents = '__parents',
     azOutputFolder = 'az-output-folder',
     generationMode = 'generation-mode',
     clearOutputFolder = 'clear-output-folder',
@@ -115,6 +118,7 @@ export enum CodeGenConstants {
     // some configuration keys under az section
     namespace = 'namespace',
     extensions = 'extensions',
+    packageName = 'package-name',
     parentExtension = 'parent-extension',
     clientBaseUrlBound = 'client-base-url-bound',
     clientSubscriptionBound = 'client-subscription-bound',
@@ -142,6 +146,26 @@ export class AzConfiguration {
             AzConfiguration.dict = config;
         } else {
             AzConfiguration.dict = {};
+        }
+
+        // set az default values
+        let parentsSetting = AzConfiguration.dict[CodeGenConstants.parents] || {};
+        if (!AzConfiguration.dict.hasOwnProperty(CodeGenConstants.az))  AzConfiguration.dict[CodeGenConstants.az] = {};
+        let azSettings = AzConfiguration.dict[CodeGenConstants.az];
+        const swaggerName= getRPFolder(parentsSetting);
+        if (!azSettings.hasOwnProperty(CodeGenConstants.extensions))   azSettings[CodeGenConstants.extensions] = mapToCliName(swaggerName);
+        if (!azSettings.hasOwnProperty(CodeGenConstants.packageName))   azSettings[CodeGenConstants.packageName] = 'azure-mgmt-' + mapToPythonPackage(swaggerName);
+        if (!azSettings.hasOwnProperty(CodeGenConstants.namespace))   azSettings[CodeGenConstants.namespace] = 'azure.mgmt.' + mapToPythonPackage(swaggerName);
+        
+        // set az-output-folder default value
+        if (isNullOrUndefined(AzConfiguration.dict[CodeGenConstants.azOutputFolder])) {
+            AzConfiguration.dict[CodeGenConstants.azOutputFolder] = path.join(AzConfiguration.dict[CodeGenConstants.azureCliFolder], 'src', 'azure-cli', 'azure', 'cli', 'command_modules', mapToCliName(getRPFolder(parentsSetting)));
+        }
+
+        // set python-sdk-output-folder default value
+        if (isNullOrUndefined(AzConfiguration.dict[CodeGenConstants.pythonSdkOutputFolder])) {
+            const cliName =  mapToCliName(getRPFolder(parentsSetting));
+            AzConfiguration.dict[CodeGenConstants.pythonSdkOutputFolder] = path.join(AzConfiguration.dict[CodeGenConstants.azOutputFolder], 'az_' + cliName, 'vendored_sdks', cliName);
         }
     }
 
