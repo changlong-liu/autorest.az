@@ -191,10 +191,12 @@ export class CliTestScenario extends TemplateBase {
                                 )}):`,
                             ),
                         );
-                        if (functionName.startsWith("setup_") && model.GetResourcePool().hasTestResourceScenario) {
+                        if (
+                            functionName.startsWith('setup_') &&
+                            model.GetResourcePool().hasTestResourceScenario
+                        ) {
                             steps.push(...model.GetResourcePool().setupWithArmTemplate());
-                        }
-                        else {
+                        } else {
                             steps.push('    pass');
                         }
                         steps.push('');

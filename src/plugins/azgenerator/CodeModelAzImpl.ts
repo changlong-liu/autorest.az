@@ -55,7 +55,11 @@ import {
     LoadPreparesConfig,
 } from './templates/tests/ScenarioTool';
 import { readFile } from '@azure-tools/async-io';
-import { TestDefinitionFile, TestStepArmTemplateDeployment, TestStepExampleFileRestCall} from 'oav/dist/lib/testScenario/testResourceTypes'
+import {
+    TestDefinitionFile,
+    TestStepArmTemplateDeployment,
+    TestStepExampleFileRestCall,
+} from 'oav/dist/lib/testScenario/testResourceTypes';
 
 class ActionParam {
     public constructor(
@@ -203,7 +207,7 @@ export class CodeModelCliImpl implements CodeModelAz {
     }
 
     public get GetTestUniqueResource(): boolean {
-        let ret = this.options?.['test-unique-resource'];
+        const ret = this.options?.['test-unique-resource'];
         if (ret) return true;
         return false;
     }
@@ -744,12 +748,13 @@ export class CodeModelCliImpl implements CodeModelAz {
     //= ================================================================================================================
 
     public GenerateTestInit(): void {
-        
         if (this.GetResourcePool().hasTestResourceScenario) {
-            this._testScenario = GroupTestScenario(this.GetResourcePool().generateTestScenario(), this.Extension_NameUnderscored);
+            this._testScenario = GroupTestScenario(
+                this.GetResourcePool().generateTestScenario(),
+                this.Extension_NameUnderscored,
+            );
             this._configuredScenario = true;
-        }
-        else if (this.codeModel['test-scenario']) {
+        } else if (this.codeModel['test-scenario']) {
             this._testScenario = GroupTestScenario(
                 this.codeModel['test-scenario'],
                 this.Extension_NameUnderscored,
@@ -2875,11 +2880,12 @@ export class CodeModelCliImpl implements CodeModelAz {
         const examples: CommandExample[] = [];
         if (this.Examples) {
             Object.entries(this.Examples).forEach(([id, exampleObj]) => {
-                if (! isNullOrUndefined(exampleTemplate))   exampleObj = exampleTemplate;
+                if (!isNullOrUndefined(exampleTemplate)) exampleObj = exampleTemplate;
                 const example = this.CreateCommandExample(id, exampleObj);
-                if (!isNullOrUndefined(example) && (
-                    isNullOrUndefined(targetId) || this.matchExample(example, targetId)
-                )) {
+                if (
+                    !isNullOrUndefined(example) &&
+                    (isNullOrUndefined(targetId) || this.matchExample(example, targetId))
+                ) {
                     examples.push(example);
                 }
             });
@@ -2907,16 +2913,11 @@ export class CodeModelCliImpl implements CodeModelAz {
         const params = this.GetExampleParameters(exampleObj);
         example.Parameters = this.ConvertToCliParameters(params);
         example.MethodResponses = this.Method.responses || [];
-        example.Method_IsLongRun = !!this.Method.extensions?.[
-            'x-ms-long-running-operation'
-        ];
+        example.Method_IsLongRun = !!this.Method.extensions?.['x-ms-long-running-operation'];
         example.ExampleObj = exampleObj;
         if (this.Method_GetSplitOriginalOperation) {
             // filter example by name for generic createorupdate
-            if (
-                this.Command_MethodName.toLowerCase() === 'update' &&
-                !forUpdate(this, id)
-            ) {
+            if (this.Command_MethodName.toLowerCase() === 'update' && !forUpdate(this, id)) {
                 return undefined;
             }
             if (this.Command_MethodName.toLowerCase() !== 'update' && forUpdate(this, id)) {
@@ -2930,8 +2931,7 @@ export class CodeModelCliImpl implements CodeModelAz {
                     i--;
                 }
             }
-        }
-        else {
+        } else {
             return undefined;
         }
         example.CommandString = this.GetExampleItems(example, false, undefined).join(' ');
@@ -2946,7 +2946,8 @@ export class CodeModelCliImpl implements CodeModelAz {
         for (const param of example.Parameters) {
             if (
                 example.ResourceClassName &&
-                this.resourcePool.isResource(param.defaultName, param.rawValue) === example.ResourceClassName
+                this.resourcePool.isResource(param.defaultName, param.rawValue) ===
+                    example.ResourceClassName
             ) {
                 resourceObjectName = param.value;
             }
@@ -3013,7 +3014,8 @@ export class CodeModelCliImpl implements CodeModelAz {
 
             if (
                 example.ResourceClassName &&
-                this.resourcePool.isResource(param.defaultName, param.rawValue) === example.ResourceClassName
+                this.resourcePool.isResource(param.defaultName, param.rawValue) ===
+                    example.ResourceClassName
             ) {
                 resourceObjectName = param.value;
             }
@@ -3079,7 +3081,8 @@ export class CodeModelCliImpl implements CodeModelAz {
                 const paramKey = param.methodParam.value.language?.['cli']?.cliKey;
                 if (
                     paramKey === 'resourceGroupName' ||
-                    this.resourcePool.isResource(paramKey, param.rawValue) === example.ResourceClassName
+                    this.resourcePool.isResource(paramKey, param.rawValue) ===
+                        example.ResourceClassName
                 ) {
                     let paramValue = param.value;
                     let replacedValue = this.resourcePool.addParamResource(
@@ -3105,7 +3108,10 @@ export class CodeModelCliImpl implements CodeModelAz {
                     }
                     parameters.push(param.name + ' ' + slp);
                 }
-                if (this.resourcePool.isResource(paramKey, param.rawValue) === example.ResourceClassName)
+                if (
+                    this.resourcePool.isResource(paramKey, param.rawValue) ===
+                    example.ResourceClassName
+                )
                     foundResource = true;
             }
         }
@@ -3132,24 +3138,35 @@ export class CodeModelCliImpl implements CodeModelAz {
         step: TestStepExampleFileRestCall = undefined,
     ): string[][] {
         const ret: string[][] = [];
-        this.GetAllExamples(id, (example) => {
-            examples.push(example);
-            ret.push(this.GetExampleItems(example, true, commandParams, minimum));
-        }, step?.exampleTemplate);
+        this.GetAllExamples(
+            id,
+            (example) => {
+                examples.push(example);
+                ret.push(this.GetExampleItems(example, true, commandParams, minimum));
+            },
+            step?.exampleTemplate,
+        );
         return ret;
     }
 
-    public FindExampleWaitById(id: string, step: TestStepExampleFileRestCall = undefined): string[][] {
+    public FindExampleWaitById(
+        id: string,
+        step: TestStepExampleFileRestCall = undefined,
+    ): string[][] {
         const ret: string[][] = [];
-        this.GetAllExamples(id, (example) => {
-            const waitCmd = this.GetExampleWait(example);
-            if (waitCmd.length > 0) ret.push(waitCmd);
-        }, step?.exampleTemplate);
+        this.GetAllExamples(
+            id,
+            (example) => {
+                const waitCmd = this.GetExampleWait(example);
+                if (waitCmd.length > 0) ret.push(waitCmd);
+            },
+            step?.exampleTemplate,
+        );
         return ret;
     }
 
     public GatherInternalResource() {
-        let internalResources = {};  // resource_key --> list of resource languages
+        const internalResources = {}; // resource_key --> list of resource languages
         this.GetAllMethods(null, () => {
             if (!(this.CommandGroup_Key in internalResources)) {
                 internalResources[this.CommandGroup_Key] = [this.CommandGroup_Key];
@@ -3394,7 +3411,11 @@ export class CodeModelCliImpl implements CodeModelAz {
         );
     }
 
-    public GetAllExamples(id?: string, callback?: (example) => void, exampleTemplate?: any): CommandExample[] {
+    public GetAllExamples(
+        id?: string,
+        callback?: (example) => void,
+        exampleTemplate?: any,
+    ): CommandExample[] {
         const ret: CommandExample[] = [];
         let found = false;
         this.GetAllMethods(null, () => {
