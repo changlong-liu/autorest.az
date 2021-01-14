@@ -160,6 +160,7 @@ export class AzCoreIncrementalGenerator extends AzGeneratorBase {
         if (needPreparers.size>0) {
             await this.generateIncrementalSingleAndAddtoOutput(new CliTestPrepare(this.model, this.isDebugMode, [...needPreparers]));
         }
+        this.model.GetResourcePool().generateArmTemplate(this.files, path.join(this.model.azOutputFolder, PathConstants.testFolder, PathConstants.latestFolder));
         GenerateMetaFile(this.model);
     }
 }

@@ -457,6 +457,9 @@ require:
   - ./readme.cli.md
   - $(this-folder)/readme.az.common.md
 
+try-require:
+  - ./readme.test.md
+
 pipeline-model: v3
 
 scope-clicommon:

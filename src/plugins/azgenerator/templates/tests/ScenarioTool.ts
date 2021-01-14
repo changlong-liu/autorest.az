@@ -9,8 +9,17 @@ import {
     isNullOrUndefined,
     Capitalize,
     ToSnakeCase,
+    setPathValue,
+    checkNested,
 } from '../../../../utils/helper';
-import { EnglishPluralizationService } from '@azure-tools/codegen';
+import { EnglishPluralizationService, isMediaTypeMultipartFormData } from '@azure-tools/codegen';
+import {AzConfiguration, CodeGenConstants} from '../../../../utils/models';
+import { TestResourceLoader } from "oav/dist/lib/testScenario/testResourceLoader";
+import { TestScenarioRunner } from "oav/dist/lib/testScenario/testScenarioRunner";
+import { VariableEnv } from "oav/dist/lib/testScenario/variableEnv";
+import { TestDefinitionFile, TestStepArmTemplateDeployment, TestStepExampleFileRestCall} from 'oav/dist/lib/testScenario/testResourceTypes'
+import { pathToFileURL } from 'url';
+import * as path from 'path';
 
 export const azOptions = {};
 
@@ -942,6 +951,17 @@ export class ResourcePool {
         for (const placeholder of placeholders) {
             str = str.split(`{${placeholder}}`).join(placeholder);
         }
+
+        // apply replace in testResource scenario
+        let p = str.indexOf("$(");
+        let q = 0;
+        while(p>=0 && q>=0) {
+            q = str.indexOf(")", p);
+            if (q>=0) {
+                str = str.slice(0, p) + "{" + str.slice(p+2, q) + "}" + str.slice(q+1);
+                p = str.indexOf("$(");
+            }
+        }
         return str;
     }
 
@@ -1315,6 +1335,108 @@ export class ResourcePool {
     public clearExampleParams() {
         for (const resource of this.findAllResource(null, [], null)) {
             resource.exampleParams = [];
+        }
+    }
+
+    public testDefs: TestDefinitionFile[] = [];
+    public async loadTestResources() {
+        function getSwaggerFolder() {
+            const parentsOptions = AzConfiguration.getValue(CodeGenConstants.parents);
+            for (const k in parentsOptions) {
+                const v: string = parentsOptions[k];
+                if (
+                    k.endsWith('.json') &&
+                    typeof v === 'string' &&
+                    v.startsWith('file:///') &&
+                    v.indexOf('specification') > 0
+                ) {
+                    return v.slice('file:///'.length);
+                }
+            }
+            return undefined;
+        }
+
+        const loader = new TestResourceLoader({
+            useJsonParser: false,
+            checkUnderFileRoot: false,
+            fileRoot: getSwaggerFolder(),
+            swaggerFilePaths: AzConfiguration.getValue(CodeGenConstants.inputFile),
+        });
+        
+        for (const testResource of AzConfiguration.getValue(CodeGenConstants.testResources) || []) {
+            const testDef = await loader.load(testResource[CodeGenConstants.test]);
+            this.testDefs.push(testDef);
+        }
+    }
+
+    public generateArmTemplate(files: Record<string, any>, templateFolder: string) {
+        for (const testDef of this.testDefs) {
+            for (let prepareStep of testDef.prepareSteps) {
+                if ( (prepareStep as TestStepArmTemplateDeployment).armTemplateDeployment) {
+                    prepareStep = prepareStep as TestStepArmTemplateDeployment;
+                    files[path.join(templateFolder, prepareStep.armTemplateDeployment)] = JSON.stringify(prepareStep.armTemplatePayload, null, 4).split("\n");
+                }   
+            }
+        }
+    }
+
+    public setupWithArmTemplate(): string[] {
+        let ret: string[]= [];
+        for (const testDef of this.testDefs) {
+            for (let prepareStep of testDef.prepareSteps) {
+                if ( (prepareStep as TestStepArmTemplateDeployment).armTemplateDeployment) {
+                    const templateFile = (prepareStep as TestStepArmTemplateDeployment).armTemplateDeployment;
+                   ret.push(`    cmd = "az deployment group create --resource-group {{rg}} --template-file \\\"{}\\\"".format(os.path.join(TEST_DIR, '${templateFile}'))`);
+                   ret.push(`    o = test.cmd(cmd).get_output_in_json()`);
+                   ret.push(`    kwargs = {k: v.get("value") for k, v in o.get('properties', {}).get('outputs', {}).items()}`);
+                   ret.push(`    test.kwargs.update(kwargs)`)
+                }   
+            }
+        }
+        if (ret.length==0) {
+            ret.push("    pass")
+        }
+        return ret;
+    }
+
+    public generateTestScenario() {
+        let cliScenario = {};
+        for (const testDef of this.testDefs) {
+            for (let testScenario of testDef.testScenarios) {
+                cliScenario[testScenario.description] = [];
+                for (let step of testScenario.steps) {
+                    if ( (step as TestStepExampleFileRestCall).exampleId) {
+                        step = step as TestStepExampleFileRestCall;
+                        this.applyTestResourceReplace(step);
+                        cliScenario[testScenario.description].push({
+                            name: step.exampleId,
+                            step: step,
+                        });
+                    }
+                }
+            }
+        }
+        return cliScenario;
+    }
+
+    public get hasTestResourceScenario():boolean {
+        return this.testDefs.length>0;
+    }
+
+    public applyTestResourceReplace(step: TestStepExampleFileRestCall) {
+        for (let replace of step.replace) {
+            if (replace.pathInBody) {
+                for (let k in step.exampleTemplate.parameters) {
+                    if (checkNested(step.exampleTemplate.parameters[k], replace.pathInBody)) {
+                        setPathValue(step.exampleTemplate.parameters[k], replace.pathInBody, replace.to);
+                    }
+                }
+            }
+            if (replace.pathInExample) {
+                if (checkNested(step.exampleTemplate, replace.pathInBody)) {
+                    setPathValue(step.exampleTemplate, replace.pathInBody, replace.to);
+                }
+            }
         }
     }
 }

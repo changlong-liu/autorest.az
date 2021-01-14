@@ -116,6 +116,7 @@ export class AzCoreFullGenerator extends AzGeneratorBase {
                 if (needPreparers.size>0) {
                     await this.generateFullSingleAndAddtoOutput(new CliTestPrepare(model, isDebugMode, [...needPreparers]));
                 }
+                model.GetResourcePool().generateArmTemplate(files, path.join(model.azOutputFolder, PathConstants.testFolder, PathConstants.latestFolder));
                 GenerateMetaFile(model);
             } while (model.SelectNextExtension());
         }

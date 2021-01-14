@@ -62,7 +62,16 @@ export class CliTestStep extends TemplateBase {
         steps.push('');
 
         const commandParams = model.GatherInternalResource();
-        const config: any = deepCopy(model.Extension_DefaultTestScenario);
+        let config: any =[];
+        if (model.GetResourcePool().hasTestResourceScenario) {
+            for (let g in model.Extension_TestScenario) {
+                for (let s in model.Extension_TestScenario[g])
+                    config.push(...model.Extension_TestScenario[g][s]);
+            }
+        }
+        else {
+            config = deepCopy(model.Extension_DefaultTestScenario);
+        }
 
         const header: HeaderGenerator = new HeaderGenerator();
 
@@ -96,6 +105,7 @@ export class CliTestStep extends TemplateBase {
                         commandParams,
                         examples,
                         minimum,
+                        config[ci].step,
                     )) {
                         exampleIdx += 1;
                         if (exampleCmd && exampleCmd.length > 0) {
