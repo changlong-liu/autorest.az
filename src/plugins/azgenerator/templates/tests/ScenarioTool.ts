@@ -1,4 +1,4 @@
-import { CommandExample, ExampleParam, KeyValueType, CodeModelAz } from '../../CodeModelAz';
+import { CommandExample, ExampleParam, KeyValueType } from '../../CodeModelAz';
 import {
     deepCopy,
     isDict,
@@ -12,13 +12,10 @@ import {
     setPathValue,
     checkNested,
 } from '../../../../utils/helper';
-import { EnglishPluralizationService, isMediaTypeMultipartFormData } from '@azure-tools/codegen';
+import { EnglishPluralizationService } from '@azure-tools/codegen';
 import {AzConfiguration, CodeGenConstants} from '../../../../utils/models';
 import { TestResourceLoader } from "oav/dist/lib/testScenario/testResourceLoader";
-import { TestScenarioRunner } from "oav/dist/lib/testScenario/testScenarioRunner";
-import { VariableEnv } from "oav/dist/lib/testScenario/variableEnv";
 import { TestDefinitionFile, TestStepArmTemplateDeployment, TestStepExampleFileRestCall} from 'oav/dist/lib/testScenario/testResourceTypes'
-import { pathToFileURL } from 'url';
 import * as path from 'path';
 
 export const azOptions = {};
@@ -148,34 +145,7 @@ export function GroupTestScenario(testScenario: any, extensionName: string) {
 
 const SUBSCRIPTIONS = "subscriptions";
 const RESOUREGROUP = "resourceGroups";
-const VIRTUALNETWORK = "virtualNetworks";
 const STORAGEACCOUNT = "storageAccounts";
-const SUBNET = "subnets";
-const NETWORKINTERFACE = "networkInterfaces";
-
-// let resourceClassDepends = {
-//     [RESOUREGROUP]: [],
-//     [STORAGEACCOUNT]: [RESOUREGROUP,],
-//     // [VIRTUALNETWORK]: [RESOUREGROUP,],
-//     // [SUBNET]: [VIRTUALNETWORK, RESOUREGROUP],
-//     // [NETWORKINTERFACE]: [VIRTUALNETWORK, RESOUREGROUP],
-// }
-
-// let resourceLanguages = {
-//     [RESOUREGROUP]: ['resource-group', 'resourceGroupName', 'resourceGroups'],
-//     [STORAGEACCOUNT]: ['storage-account', 'storageAccountName', 'storageAccounts'],
-//     // [VIRTUALNETWORK]: ['virtual-network', 'virtualNetworkName', 'virtualNetworks'],
-//     // [SUBNET]: ['subnet', 'subnetName', 'subnets'],
-//     // [NETWORKINTERFACE]: ['network-interface', 'networkInterfaceName', 'networkInterfaces'],
-// }
-
-// let resourceClassKeys = {
-//     [RESOUREGROUP]: 'rg',
-//     [STORAGEACCOUNT]: 'sa',
-//     // [VIRTUALNETWORK]: 'vn',
-//     // [SUBNET]: 'sn',
-//     // [NETWORKINTERFACE]: 'nic',
-// }
 
 export function TopoSortResource() {
     let ret = [];
@@ -259,9 +229,6 @@ export class PreparerInfo {
 export let preparerInfos: { [key: string]: PreparerInfo; } = {
     [RESOUREGROUP]: new PreparerInfo('ResourceGroupPreparer', RESOUREGROUP, [], [], 'rg', ['resource-group', 'resourceGroupName', 'resourceGroups']),
     [STORAGEACCOUNT]: new PreparerInfo('StorageAccountPreparer', STORAGEACCOUNT, ['resource_group_parameter_name'], [RESOUREGROUP], 'sa', ['storage-account', 'storageAccountName', 'storageAccounts']),
-    // [VIRTUALNETWORK]: new PreparerInfo('VirtualNetworkPreparer', VIRTUALNETWORK, ['resource_group_parameter_name'], [RESOUREGROUP], 'vnet', ['virtualNetworks', 'virtual-network', 'virtualNetworkName',]),
-    // [SUBNET]: new PreparerInfo('VnetSubnetPreparer', SUBNET, ['resource_group_key', 'vnet_key'], [RESOUREGROUP, VIRTUALNETWORK]),
-    // [NETWORKINTERFACE]: new PreparerInfo('VnetNicPreparer', NETWORKINTERFACE, ['resource_group_key', 'vnet_key'], [RESOUREGROUP, VIRTUALNETWORK]),
 }
 
 export function GenPreparerName(className: string): string {
@@ -1185,10 +1152,10 @@ export class ResourcePool {
             }
             const resource = this.isResource(nodes[i], nodes[i+1], fullType);
             if (resource) {
-                if (false && resource == SUBNET) {
-                    // since the subnet can't be created with rand name, just use the dfault one.
-                    nodes[i + 1] = 'default';
-                } else {
+                // if (resource == SUBNET) {
+                //     // since the subnet can't be created with rand name, just use the dfault one.
+                //     nodes[i + 1] = 'default';
+                // } else {
                     resourceObject = this.addTreeResource(resource, nodes[i + 1], resourceObject);
                     nodes[i + 1] = resourceObject.placeholder(isTest);
                     if (placeholders.indexOf(resourceObject.placeholder(isTest)) < 0) {
@@ -1197,7 +1164,7 @@ export class ResourcePool {
                     if (resources.indexOf(resource) < 0) {
                         resources.push(resource);
                     }
-                }
+                // }
             } else {
                 nodes[i + 1] = this.getPlaceholder(nodes[i + 1], isTest);
             }
