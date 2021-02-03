@@ -1,15 +1,9 @@
 import * as path from 'path';
 import { CodeModelAz } from '../../CodeModelAz';
-import { HeaderGenerator } from '../Header';
 import { TemplateBase } from '../TemplateBase';
 import { PathConstants } from '../../../utils/models';
-import {
-    GenPreparerDependParamName,
-    GenPreparerName,
-    preparerInfos,
-    PreparerInfo,
-} from './ScenarioTool';
-import { ToJsonString, ToMultiLine } from '../../../utils/helper';
+import { GenPreparerName, preparerInfos } from './ScenarioTool';
+import { ToJsonString } from '../../../utils/helper';
 
 class FuncData {
     constructor(public cmdTemplate: string, public cmdFormats: string[]) {}

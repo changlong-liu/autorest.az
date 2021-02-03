@@ -285,6 +285,5 @@ export interface CodeModelAz {
         inputProperties: Map<CodeModelTypes, RenderInput>,
         dependencies: DataGraph,
     );
-    PreparerConfig: any;
     GetTestUniqueResource: boolean;
 }

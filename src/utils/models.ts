@@ -121,6 +121,7 @@ export enum CodeGenConstants {
     cliCoreLib = 'cli-core-lib',
     inputFile = 'input-file',
     testResources = 'test-resources',
+    preparers = 'preparers',
 
     // some configuration keys under az section
     namespace = 'namespace',

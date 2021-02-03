@@ -136,8 +136,7 @@ export class CodeModelCliImpl implements CodeModelAz {
         this._clientAuthenticationPolicy = this.options[
             CodeGenConstants.clientAuthenticationPolicy
         ];
-        this.PreparerConfig = this.options['preparers'];
-        LoadPreparesConfig(this.PreparerConfig);
+        LoadPreparesConfig(this.options[CodeGenConstants.preparers]);
         // this.sortOperationByAzCommand();
     }
 
@@ -3645,14 +3644,6 @@ export class CodeModelCliImpl implements CodeModelAz {
             return CodeGenConstants.DEFAULT_CLI_CORE_LIB;
         }
         return this._cliCoreLib;
-    }
-
-    public set PreparerConfig(options: any) {
-        this._preparerConfig = options;
-    }
-
-    public get PreparerConfig(): any {
-        return this._preparerConfig;
     }
 
     public get AzureCliFolder(): string {
