@@ -9,7 +9,7 @@ testScenarios:
       - exampleFile: ../examples/Create_AttestationProvider.json
       - exampleFile: ../examples/Update_AttestationProvider.json
         replace:
-          - pathInBody: updateParams.tags.Property1
+          - pathInBody: tags.Property1
             to: $(storageAccountId)
 
 

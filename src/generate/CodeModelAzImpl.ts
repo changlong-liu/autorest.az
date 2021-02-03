@@ -61,11 +61,7 @@ import {
     LoadPreparesConfig,
 } from './renders/tests/ScenarioTool';
 import { readFile } from '@azure-tools/async-io';
-import {
-    TestDefinitionFile,
-    TestStepArmTemplateDeployment,
-    TestStepExampleFileRestCall,
-} from 'oav/dist/lib/testScenario/testResourceTypes';
+import { TestStepExampleFileRestCall } from 'oav/dist/lib/testScenario/testResourceTypes';
 import * as os from 'os';
 
 class ActionParam {
@@ -149,8 +145,6 @@ export class CodeModelCliImpl implements CodeModelAz {
         this.sortOperationByAzCommand();
         this.calcOptionRequiredByMethod();
         this.dealingParameterAlias();
-        this.GenerateTestInit();
-        this.GetAllExamples();
     }
 
     private sortOperationByAzCommand() {
@@ -809,6 +803,7 @@ export class CodeModelCliImpl implements CodeModelAz {
             this._configuredScenario = false;
         }
         this.GatherInternalResource();
+        this.GetAllExamples();
     }
 
     public get ConfiguredScenario(): boolean {
