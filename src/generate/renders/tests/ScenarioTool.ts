@@ -1369,12 +1369,7 @@ export class ResourcePool {
             const parentsOptions = AzConfiguration.getValue(CodeGenConstants.parents);
             for (const k in parentsOptions) {
                 const v: string = parentsOptions[k];
-                if (
-                    k.endsWith('.json') &&
-                    typeof v === 'string' &&
-                    v.startsWith('file:///') &&
-                    v.indexOf('specification') > 0
-                ) {
+                if (k.endsWith('.json') && typeof v === 'string' && v.startsWith('file:///')) {
                     if (os.type().toLowerCase().indexOf('linux') >= 0) {
                         return v.slice('file:///'.length - 1);
                     }

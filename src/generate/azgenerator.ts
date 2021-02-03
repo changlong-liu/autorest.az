@@ -32,6 +32,7 @@ export async function processRequest(host: Host) {
 
         openInplaceGen();
         await model.resourcePool.loadTestResources();
+        // model.GenerateTestInit();
         const generator = AzGeneratorFactory.createAzGenerator(model);
         await generator.generateAll();
         const files = generator.files;
