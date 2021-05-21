@@ -18,13 +18,14 @@ export enum TestMode {
     ExtDefaultFolder = 'ext_default_folder',
     ExtNoSdkNoFlattenTrack1 = 'extnosdknoflattentrack1',
     CoreTrack2 = 'coretrack2',
+    ExtSecondGen = 'extsecondgen',
 }
 
 describe('ScenarioTest', () => {
     const testDimensions: Map<string, Array<TestMode>> = new Map([
         ['attestation', [TestMode.ExtDefault]],
         ['boolean', [TestMode.ExtDefault]],
-        ['datafactory', [TestMode.ExtDefault]],
+        ['datafactory', [TestMode.ExtSecondGen]],
         ['managed-network', [TestMode.ExtDefault]],
         ['msgraphuser', [TestMode.ExtDefault]],
         ['mixed-reality', [TestMode.ExtIncremental]],
@@ -109,7 +110,8 @@ describe('ScenarioTest', () => {
         if (
             testMode === TestMode.ExtDefault ||
             testMode === TestMode.ExtIncremental ||
-            testMode === TestMode.ExtDefaultFolder
+            testMode === TestMode.ExtDefaultFolder ||
+            testMode === TestMode.ExtSecondGen
         ) {
             const key = CodeGenConstants.azureCliExtFolder;
             extraOption[key] = outputDir;
@@ -213,7 +215,8 @@ describe('ScenarioTest', () => {
                             dimension === TestMode.CoreDefault ||
                             dimension === TestMode.ExtIncremental ||
                             dimension === TestMode.CoreIncremental ||
-                            dimension === TestMode.CoreTrack2
+                            dimension === TestMode.CoreTrack2 ||
+                            dimension === TestMode.ExtSecondGen
                         ) {
                             copyRecursiveSync(
                                 path.join(dir, rp, 'basecli'),

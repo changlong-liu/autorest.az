@@ -3,6 +3,6 @@
 Release History
 ===============
 
-0.1.0
+0.2.0
 ++++++
-* Initial release.
+* For simulate second round codegen
